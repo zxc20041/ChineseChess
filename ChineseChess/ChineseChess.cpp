@@ -81,6 +81,9 @@ bool LocalGame_Page::EnterPage()
 	g_rm.AddResource("bg board", ".\\game\\pic\\board.jpg", ResourceManager::ResourceType::Resource_Texture, "DE601E07F5C7D8B8DDD81F521A458510", brush_only);
 
 	g_rm.AddResource("bg river", ".\\game\\pic\\bg_river.png", ResourceManager::ResourceType::Resource_Texture, "pass");
+
+	g_rm.AddResource("pieces", ".\\game\\pic\\pieces.png", ResourceManager::ResourceType::Resource_Texture, "pass");
+	g_rm.AddResource("pieces atlas info", ".\\game\\pic\\pieces.dat", ResourceManager::ResourceType::Resource_Text, "pass");
 	g_rm.LoadAll();
 
 	g_cm.AddButton(returnButton);
@@ -98,7 +101,39 @@ bool LocalGame_Page::ExitPage()
 
 void LocalGame_Page::OnLoad()
 {
-	//resolve dat
+	//resolve atlas data
+	TEXT_RESOURCE* text = g_rm.getText("pieces atlas info");
+	int cnt = 0, index = 0;
+	if (text == nullptr)
+	{
+		debugger_main.writelog(DERROR, "text lines not match in Mapinfo", __LINE__);
+		return;
+	}
+	string strbuf[64][4];
+	for (int i = 0; i < text->lines; i++)
+	{
+		while (text->content[i][cnt] != '\0')
+		{
+			if (text->content[i][cnt] == ' ')
+			{
+				index++;
+				cnt++;
+				if (index == 4)
+				{
+					break;
+				}
+				continue;
+			}
+			strbuf[i][index] += text->content[i][cnt];
+			cnt++;
+		}
+		cnt = 0;
+		index = 0;
+	}
+	//find corresponding data
+	for (int i = 0; i < text->lines; i++)
+	{
 
+	}
 	return;
 }
