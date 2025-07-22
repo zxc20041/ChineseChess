@@ -102,38 +102,11 @@ bool LocalGame_Page::ExitPage()
 void LocalGame_Page::OnLoad()
 {
 	//resolve atlas data
-	TEXT_RESOURCE* text = g_rm.getText("pieces atlas info");
-	int cnt = 0, index = 0;
-	if (text == nullptr)
+	if (!CUI.LoadPiecesAtlasInfo())
 	{
-		debugger_main.writelog(DERROR, "text lines not match in Mapinfo", __LINE__);
-		return;
+		g_PageManager.SwitchPageTo(HOME_PAGE_INDEX);
+		g_am.playEffectSound(8);
 	}
-	string strbuf[64][4];
-	for (int i = 0; i < text->lines; i++)
-	{
-		while (text->content[i][cnt] != '\0')
-		{
-			if (text->content[i][cnt] == ' ')
-			{
-				index++;
-				cnt++;
-				if (index == 4)
-				{
-					break;
-				}
-				continue;
-			}
-			strbuf[i][index] += text->content[i][cnt];
-			cnt++;
-		}
-		cnt = 0;
-		index = 0;
-	}
-	//find corresponding data
-	for (int i = 0; i < text->lines; i++)
-	{
-
-	}
+	
 	return;
 }
