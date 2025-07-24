@@ -381,6 +381,9 @@ struct RESOURCE_INFO;
 class ResourceManager
 {
 public:
+    constexpr static int SINGLE_LOADING = 1;
+    constexpr static int SINGLE_IDLE = 0;
+    constexpr static int SINGLE_FAILED = -1;
     enum class ResourceType
     {
         Resource_Texture = 0,
@@ -420,6 +423,7 @@ private:
     constexpr static int FILE_VERIFY_REQ = 1;
     constexpr static int FILE_VERIFY_SUCCEED = 2;
     constexpr static int FILE_VERIFY_FAILED = 3;
+    
     unordered_map<string, ID2D1Bitmap*> textureMap;
     unordered_map<string, IWICBitmapSource*> WICtextureMap;
     unordered_map<string, ID2D1BitmapBrush1*> brushMap;

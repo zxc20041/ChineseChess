@@ -30,6 +30,7 @@ bool CChessUI::LoadPiecesAtlasInfo()
 void CChessUI::Rend()
 {
 	render.RendBG();
+	render.RendPieces();
 	return;
 }
 
@@ -59,6 +60,14 @@ CChessUI::UIRender::UIRender()
 	map_rect_extent = D2D1::RectF(map_area_posx1 * 1.02f - map_area_posx2 * 0.02f, map_area_posy1 * 1.02f - map_area_posy2 * 0.02f, map_area_posx2 * 1.02f - map_area_posx1 * 0.02f, map_area_posy2 * 1.02f - map_area_posy1 * 0.02f);
 	river_rect= D2D1::RectF(map_area_posx1 * 0.5f + map_area_posx2 * 0.5f - (map_area_posy2 - map_area_posy1) * 3.5f/9, map_area_posy1 * 5 / 9 + map_area_posy2 * 4 / 9, map_area_posx1 * 0.5f + map_area_posx2 * 0.5f + (map_area_posy2 - map_area_posy1) * 3.5f/9, map_area_posy1 * 4 / 9 + map_area_posy2 * 5 / 9);
 	board_rect = D2D1::RectF(map_area_posx1 * 1.05f - map_area_posx2 * 0.05f , map_area_posy1 * 1.05f - map_area_posy2 * 0.05f, map_area_posx2 * 1.05f - map_area_posx1 * 0.05f , map_area_posy2 * 1.05f - map_area_posy1 * 0.05f);
+	for (int i = 0; i <= BOARD_X_MAX; i++)
+	{
+		for (int j = 0; j <= BOARD_Y_MAX; j++)
+		{
+			piece_rect[i][j] = D2D1::RectF(map_line_x[i] - block_length_x * 0.5f, map_line_y[j] - block_length_y * 0.5f, map_line_x[i] + block_length_x * 0.5f, map_line_y[j] + block_length_y * 0.5f);
+		}
+		
+	}
 }
 
 CChessUI::UIRender::~UIRender()
@@ -69,8 +78,89 @@ void CChessUI::UIRender::UpdateAll()
 {
 }
 
+void CChessUI::UIRender::RendStaticPiece(PIECE_UI &piece)
+{
+	if (piece.x > BOARD_X_MAX || piece.y > BOARD_Y_MAX)
+	{
+		debugger_main.add_output_line("illegal x,y in CChessUI::UIRender::RendStaticPiece() " + to_string(piece.x) + "," + to_string(piece.y));
+		return;
+	}
+	ID2D1Bitmap* texture = g_rm.getTexture("pieces");
+	if (piece.side_red)
+	{
+		switch (piece.type)
+		{
+		case CChessBase::PIECE_NULL:
+			break;
+		case CChessBase::PIECE_PAWN:
+			DrawBitmap_1(texture, piece_rect[piece.x][piece.y], piece_rect_set["red_pawn"].static_rect,1.0f);
+			break;
+		case CChessBase::PIECE_ROOK:
+			DrawBitmap_1(texture, piece_rect[piece.x][piece.y], piece_rect_set["red_rook"].static_rect, 1.0f);
+			break;
+		case CChessBase::PIECE_HORSE:
+			DrawBitmap_1(texture, piece_rect[piece.x][piece.y], piece_rect_set["red_horse"].static_rect, 1.0f);
+			break;
+		case CChessBase::PIECE_ELEPHANT:
+			DrawBitmap_1(texture, piece_rect[piece.x][piece.y], piece_rect_set["red_elephant"].static_rect, 1.0f);
+			break;
+		case CChessBase::PIECE_CANNON:
+			DrawBitmap_1(texture, piece_rect[piece.x][piece.y], piece_rect_set["red_connon"].static_rect, 1.0f);
+			break;
+		case CChessBase::PIECE_MANDARIN:
+			DrawBitmap_1(texture, piece_rect[piece.x][piece.y], piece_rect_set["red_mandarin"].static_rect, 1.0f);
+			break;
+		case CChessBase::PIECE_KING:
+			DrawBitmap_1(texture, piece_rect[piece.x][piece.y], piece_rect_set["red_king"].static_rect, 1.0f);
+			break;
+		default:
+			break;
+		}
+	}
+	else
+	{
+		switch (piece.type)
+		{
+		case CChessBase::PIECE_NULL:
+			break;
+		case CChessBase::PIECE_PAWN:
+			DrawBitmap_1(texture, piece_rect[piece.x][piece.y], piece_rect_set["black_pawn"].static_rect, 1.0f);
+			break;
+		case CChessBase::PIECE_ROOK:
+			DrawBitmap_1(texture, piece_rect[piece.x][piece.y], piece_rect_set["black_rook"].static_rect, 1.0f);
+			break;
+		case CChessBase::PIECE_HORSE:
+			DrawBitmap_1(texture, piece_rect[piece.x][piece.y], piece_rect_set["black_horse"].static_rect, 1.0f);
+			break;
+		case CChessBase::PIECE_ELEPHANT:
+			DrawBitmap_1(texture, piece_rect[piece.x][piece.y], piece_rect_set["black_elephant"].static_rect, 1.0f);
+			break;
+		case CChessBase::PIECE_CANNON:
+			DrawBitmap_1(texture, piece_rect[piece.x][piece.y], piece_rect_set["black_connon"].static_rect, 1.0f);
+			break;
+		case CChessBase::PIECE_MANDARIN:
+			DrawBitmap_1(texture, piece_rect[piece.x][piece.y], piece_rect_set["black_mandarin"].static_rect, 1.0f);
+			break;
+		case CChessBase::PIECE_KING:
+			DrawBitmap_1(texture, piece_rect[piece.x][piece.y], piece_rect_set["black_king"].static_rect, 1.0f);
+			break;
+		default:
+			break;
+		}
+	}
+	return;
+}
+
 void CChessUI::UIRender::RendPieces()
 {
+	for (auto &i : pieces)
+	{
+		if (i.status == PIECE_STATIC)
+		{
+			RendStaticPiece(i);
+		}
+	}
+	return;
 }
 
 void CChessUI::UIRender::RendBG()
@@ -232,7 +322,7 @@ bool CChessUI::UIRender::LoadPiecesAtlasInfo()
 	int cnt = 0, index = 0;
 	if (text == nullptr)
 	{
-		debugger_main.writelog(DERROR, "text lines not match in Mapinfo", __LINE__);
+		debugger_main.writelog(DERROR, "pieces atlas data not found", __LINE__);
 		return 0;
 	}
 	string strbuf[64][4];
@@ -274,10 +364,10 @@ bool CChessUI::UIRender::LoadPiecesAtlasInfo()
 				}
 				catch (exception e)
 				{
-					debugger_main.writelog(DWARNNING, "exception when stoi in CChessUI::UIRender::LoadPiecesAtlasInfo() " + string(e.what()),__LINE__);
+					debugger_main.writelog(DWARNNING, "exception when stoi in CChessUI::UIRender::LoadPiecesAtlasInfo(): " + string(e.what()),__LINE__);
 					return 0;
 				}
-				piece_rect_set[strbuf[i][0]] = rect;
+				piece_rect_set[j] = rect;
 				break;
 			}
 		}

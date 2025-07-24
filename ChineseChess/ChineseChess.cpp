@@ -107,6 +107,6 @@ void LocalGame_Page::OnLoad()
 		g_PageManager.SwitchPageTo(HOME_PAGE_INDEX);
 		g_am.playEffectSound(8);
 	}
-	
+	CUI.Reset();
 	return;
 }

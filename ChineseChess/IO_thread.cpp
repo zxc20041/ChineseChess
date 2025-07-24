@@ -568,20 +568,20 @@ unsigned __stdcall File_IO(LPVOID lpParameter)
             thread_IO_request_rend_taglines = 0;
             rend_taglines(1);
         }
-        if (g_rm.releaseAllSignal.load() == 1)
+        if (g_rm.releaseAllSignal.load() == g_rm.SINGLE_LOADING)
         {
             g_rm.releaseAll_implementation();
-            g_rm.releaseAllSignal.store(0);
+            g_rm.releaseAllSignal.store(g_rm.SINGLE_IDLE);
         }
-        if (g_rm.loadAllSignal.load() == 1)
+        if (g_rm.loadAllSignal.load() == g_rm.SINGLE_LOADING)
         {
             if (g_rm.LoadAll_implementation())
             {
-                g_rm.loadAllSignal.store(0);
+                g_rm.loadAllSignal.store(g_rm.SINGLE_IDLE);
             }
             else
             {
-                g_rm.loadAllSignal.store(-1);
+                g_rm.loadAllSignal.store(g_rm.SINGLE_FAILED);
             }
         }
         

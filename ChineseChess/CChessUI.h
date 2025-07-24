@@ -3,6 +3,19 @@
 #include"CChessBase.h"
 
 using namespace CChessBase;
+
+//todo: add PIECE_UI class
+class PIECE_UI
+{
+public:
+	int x, y;
+	float posx, posy;
+	float moving_time;
+	bool side_red;
+	Piece_Move_Status status;
+	ChessPieceType type;
+};
+
 class CChessUI
 {
 public:
@@ -17,8 +30,7 @@ public:
 	void Rend();
 private:
 	
-	constexpr static const char* piece_names[14] = { "black_mandarin","black_king","red_king","black_pawn","red_horse","black_elephant",
-	"black_horse","red_pawn","red_elephant","black_rook","red_cannon","red_rook","red_mandarin","black_cannon" };
+	
 	CChessBase::CChessMap map;
 	
 
@@ -29,6 +41,7 @@ private:
 		~UIRender();
 
 		void UpdateAll();
+		void RendStaticPiece(PIECE_UI& piece);
 		void RendPieces();
 		void RendBG();
 
@@ -40,25 +53,8 @@ private:
 		void Eat(int x, int y);
 	private:
 		constexpr static int PIECE_NUM_MAX = 32;
-		enum Piece_Move_Status
-		{
-			PIECE_STATIC,
-			PIECE_UP_MOVING,
-			PIECE_HANG,
-			PIECE_DOWN_MOVING,
-			PIECE_MOVING_TO,
-			PIECE_EAT_MOVING_TO,
-			PIECE_DIED
-		};
-		struct PIECE_UI
-		{
-			int x, y;
-			float posx, posy;
-			float moving_time;
-			bool side_red;
-			Piece_Move_Status status;
-			ChessPieceType type;
-		};
+		
+
 		struct PIECE_ATLAS_INFO
 		{
 			D2D1_RECT_F static_rect;
@@ -77,7 +73,7 @@ private:
 
 		float map_line_x[BOARD_X_MAX + 1], map_line_y[BOARD_Y_MAX + 1];
 
-		D2D1_RECT_F board_rect, river_rect,map_rect, map_rect_extent;
+		D2D1_RECT_F board_rect, river_rect, map_rect, map_rect_extent, piece_rect[BOARD_X_MAX + 1][BOARD_Y_MAX + 1];
 
 		unordered_map<string, PIECE_ATLAS_INFO> piece_rect_set;
 	};

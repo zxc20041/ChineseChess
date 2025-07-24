@@ -351,6 +351,8 @@ ResourceManager::~ResourceManager()
 
 void ResourceManager::AddResource(string aliasName, string filePath, ResourceType type, string md5, TEXTURE_DESC texture_desc, FONT_DESC font_desc, TEXT_DESC text_desc, void* func)
 {
+    while (releaseAllSignal.load() == SINGLE_LOADING);
+
     for (int i = 0; i < res_num; i++)
     {
         if (res_info[i]->aliasName == aliasName&& type!= ResourceType::Resource_Font)
@@ -430,7 +432,7 @@ ID2D1BitmapBrush1* ResourceManager::getBrush(string aliasName)
     if (brushMap.find(aliasName) == brushMap.end() && notFoundNum < 3)
     {
         notFoundNum++;
-        debugger_main.writelog(2, "res not found in ResourceManager::getBrush() " + aliasName);
+        debugger_main.writelog(DERROR, "res not found in ResourceManager::getBrush() " + aliasName);
         return nullptr;
     }
     return brushMap[aliasName];
@@ -442,7 +444,7 @@ int ResourceManager::getAudioIndex(string aliasName)
     if (audioMap.find(aliasName) == audioMap.end() && notFoundNum < 3)
     {
         notFoundNum++;
-        debugger_main.writelog(1, "res not found in ResourceManager::getAudioIndex() " + aliasName);
+        debugger_main.writelog(DWARNNING, "res not found in ResourceManager::getAudioIndex() " + aliasName);
         return 0;
     }
     return audioMap[aliasName];
@@ -640,16 +642,18 @@ bool ResourceManager::LoadAll_implementation()
         }
         i->loaded = 1;
     }
+    int loaded_cnt = 0;
     for (auto& i : res_info)
     {
         if (i == nullptr || !i->loaded)
         {
             continue;
         }
+        loaded_cnt++;
         delete i;
         i = nullptr;
     }
-    debugger_main.writelog(DDEBUG, "finishing ResourceManager::LoadAll_implementation()", __LINE__);
+    debugger_main.writelog(DDEBUG, "finishing ResourceManager::LoadAll_implementation() "+to_string(loaded_cnt), __LINE__);
     return 1;
 }
 
@@ -5359,8 +5363,8 @@ bool PAGE::EnterPage()
         {
             debugger_main.writelog(DWARNNING, "failed to init page");
         }
-        Page_status = PAGE_INIT_STATUS;
     }
+    Page_status = PAGE_INIT_STATUS;
     g_cm.ClearPage();
     return 1;
 }
