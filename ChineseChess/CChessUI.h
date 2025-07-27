@@ -8,12 +8,23 @@ using namespace CChessBase;
 class PIECE_UI
 {
 public:
+	PIECE_UI(int x,int y, ChessPieceType type,bool side_red);
+	void rend();
+	void update();
+	static unordered_map<string, PIECE_ATLAS_INFO> piece_rect_set;
+	static D2D1_RECT_F piece_rect[BOARD_X_MAX + 1][BOARD_Y_MAX + 1];
+	static float map_line_x[BOARD_X_MAX + 1], map_line_y[BOARD_Y_MAX + 1];
+private:
 	int x, y;
 	float posx, posy;
 	float moving_time;
 	bool side_red;
 	Piece_Move_Status status;
 	ChessPieceType type;
+
+	D2D1_RECT_F static_rect, up_rect, down_rect;
+
+	
 };
 
 class CChessUI
@@ -41,7 +52,7 @@ private:
 		~UIRender();
 
 		void UpdateAll();
-		void RendStaticPiece(PIECE_UI& piece);
+		//void RendStaticPiece(PIECE_UI& piece);
 		void RendPieces();
 		void RendBG();
 
@@ -55,14 +66,9 @@ private:
 		constexpr static int PIECE_NUM_MAX = 32;
 		
 
-		struct PIECE_ATLAS_INFO
-		{
-			D2D1_RECT_F static_rect;
-			D2D1_RECT_F up_rect;
-			D2D1_RECT_F down_rect;
-		};
+		
 		float timeScale;
-		PIECE_UI pieces[PIECE_NUM_MAX];
+		PIECE_UI *pieces[PIECE_NUM_MAX];
 
 		bool side_red;
 		bool piece_selected;
@@ -73,9 +79,9 @@ private:
 
 		float map_line_x[BOARD_X_MAX + 1], map_line_y[BOARD_Y_MAX + 1];
 
-		D2D1_RECT_F board_rect, river_rect, map_rect, map_rect_extent, piece_rect[BOARD_X_MAX + 1][BOARD_Y_MAX + 1];
+		D2D1_RECT_F board_rect, river_rect, map_rect, map_rect_extent;
 
-		unordered_map<string, PIECE_ATLAS_INFO> piece_rect_set;
+		//unordered_map<string, PIECE_ATLAS_INFO> piece_rect_set;
 	};
 
 	UIRender render;

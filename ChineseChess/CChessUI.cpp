@@ -3,6 +3,11 @@
 using namespace debugger;
 using namespace CChessBase;
 
+
+unordered_map<string, PIECE_ATLAS_INFO> PIECE_UI::piece_rect_set;
+D2D1_RECT_F PIECE_UI::piece_rect[BOARD_X_MAX + 1][BOARD_Y_MAX + 1];
+float PIECE_UI::map_line_x[BOARD_X_MAX + 1], PIECE_UI::map_line_y[BOARD_Y_MAX + 1];
+
 CChessUI::CChessUI()
 {
 	memset(&map, 0, sizeof map);
@@ -43,7 +48,7 @@ CChessUI::UIRender::UIRender()
 	piece_selected = 0;
 	selected_piece_x = 0, selected_piece_y = 0;
 
-	map_area_posx1 = 350, map_area_posx2 = 1200, map_area_posy1 = 70, map_area_posy2 = 835;
+	map_area_posx1 = 380, map_area_posx2 = 1170, map_area_posy1 = 70, map_area_posy2 = 835;
 	block_length_x = (map_area_posx2 - map_area_posx1) / 8;
 	block_length_y = (map_area_posy2 - map_area_posy1) / 9;
 	mark_lengthx_short = block_length_x * 0.05f, mark_lengthx_long = block_length_x * 0.2f;
@@ -51,10 +56,12 @@ CChessUI::UIRender::UIRender()
 	for (int i = 0; i < 9; i++)
 	{
 		map_line_x[i] = map_area_posx1 + block_length_x * i;
+		PIECE_UI::map_line_x[i] = map_area_posx1 + block_length_x * i;
 	}
 	for (int i = 0; i < 10; i++)
 	{
 		map_line_y[i] = map_area_posy1 + block_length_y * i;
+		PIECE_UI::map_line_y[i] = map_area_posy1 + block_length_y * i;
 	}
 	map_rect = D2D1::RectF(map_area_posx1, map_area_posy1, map_area_posx2, map_area_posy2);
 	map_rect_extent = D2D1::RectF(map_area_posx1 * 1.02f - map_area_posx2 * 0.02f, map_area_posy1 * 1.02f - map_area_posy2 * 0.02f, map_area_posx2 * 1.02f - map_area_posx1 * 0.02f, map_area_posy2 * 1.02f - map_area_posy1 * 0.02f);
@@ -64,7 +71,7 @@ CChessUI::UIRender::UIRender()
 	{
 		for (int j = 0; j <= BOARD_Y_MAX; j++)
 		{
-			piece_rect[i][j] = D2D1::RectF(map_line_x[i] - block_length_x * 0.5f, map_line_y[j] - block_length_y * 0.5f, map_line_x[i] + block_length_x * 0.5f, map_line_y[j] + block_length_y * 0.5f);
+			PIECE_UI::piece_rect[i][j] = D2D1::RectF(map_line_x[i] - block_length_x * 0.5f, map_line_y[j] - block_length_y * 0.5f, map_line_x[i] + block_length_x * 0.5f, map_line_y[j] + block_length_y * 0.5f);
 		}
 		
 	}
@@ -72,93 +79,25 @@ CChessUI::UIRender::UIRender()
 
 CChessUI::UIRender::~UIRender()
 {
+	for (int i = 0; i < PIECE_NUM_MAX; i++)
+	{
+		if (pieces[i] != nullptr)
+		{
+			delete pieces[i];
+			pieces[i] = nullptr;
+		}
+	}
 }
 
 void CChessUI::UIRender::UpdateAll()
 {
 }
 
-void CChessUI::UIRender::RendStaticPiece(PIECE_UI &piece)
-{
-	if (piece.x > BOARD_X_MAX || piece.y > BOARD_Y_MAX)
-	{
-		debugger_main.add_output_line("illegal x,y in CChessUI::UIRender::RendStaticPiece() " + to_string(piece.x) + "," + to_string(piece.y));
-		return;
-	}
-	ID2D1Bitmap* texture = g_rm.getTexture("pieces");
-	if (piece.side_red)
-	{
-		switch (piece.type)
-		{
-		case CChessBase::PIECE_NULL:
-			break;
-		case CChessBase::PIECE_PAWN:
-			DrawBitmap_1(texture, piece_rect[piece.x][piece.y], piece_rect_set["red_pawn"].static_rect,1.0f);
-			break;
-		case CChessBase::PIECE_ROOK:
-			DrawBitmap_1(texture, piece_rect[piece.x][piece.y], piece_rect_set["red_rook"].static_rect, 1.0f);
-			break;
-		case CChessBase::PIECE_HORSE:
-			DrawBitmap_1(texture, piece_rect[piece.x][piece.y], piece_rect_set["red_horse"].static_rect, 1.0f);
-			break;
-		case CChessBase::PIECE_ELEPHANT:
-			DrawBitmap_1(texture, piece_rect[piece.x][piece.y], piece_rect_set["red_elephant"].static_rect, 1.0f);
-			break;
-		case CChessBase::PIECE_CANNON:
-			DrawBitmap_1(texture, piece_rect[piece.x][piece.y], piece_rect_set["red_connon"].static_rect, 1.0f);
-			break;
-		case CChessBase::PIECE_MANDARIN:
-			DrawBitmap_1(texture, piece_rect[piece.x][piece.y], piece_rect_set["red_mandarin"].static_rect, 1.0f);
-			break;
-		case CChessBase::PIECE_KING:
-			DrawBitmap_1(texture, piece_rect[piece.x][piece.y], piece_rect_set["red_king"].static_rect, 1.0f);
-			break;
-		default:
-			break;
-		}
-	}
-	else
-	{
-		switch (piece.type)
-		{
-		case CChessBase::PIECE_NULL:
-			break;
-		case CChessBase::PIECE_PAWN:
-			DrawBitmap_1(texture, piece_rect[piece.x][piece.y], piece_rect_set["black_pawn"].static_rect, 1.0f);
-			break;
-		case CChessBase::PIECE_ROOK:
-			DrawBitmap_1(texture, piece_rect[piece.x][piece.y], piece_rect_set["black_rook"].static_rect, 1.0f);
-			break;
-		case CChessBase::PIECE_HORSE:
-			DrawBitmap_1(texture, piece_rect[piece.x][piece.y], piece_rect_set["black_horse"].static_rect, 1.0f);
-			break;
-		case CChessBase::PIECE_ELEPHANT:
-			DrawBitmap_1(texture, piece_rect[piece.x][piece.y], piece_rect_set["black_elephant"].static_rect, 1.0f);
-			break;
-		case CChessBase::PIECE_CANNON:
-			DrawBitmap_1(texture, piece_rect[piece.x][piece.y], piece_rect_set["black_connon"].static_rect, 1.0f);
-			break;
-		case CChessBase::PIECE_MANDARIN:
-			DrawBitmap_1(texture, piece_rect[piece.x][piece.y], piece_rect_set["black_mandarin"].static_rect, 1.0f);
-			break;
-		case CChessBase::PIECE_KING:
-			DrawBitmap_1(texture, piece_rect[piece.x][piece.y], piece_rect_set["black_king"].static_rect, 1.0f);
-			break;
-		default:
-			break;
-		}
-	}
-	return;
-}
-
 void CChessUI::UIRender::RendPieces()
 {
 	for (auto &i : pieces)
 	{
-		if (i.status == PIECE_STATIC)
-		{
-			RendStaticPiece(i);
-		}
+		i->rend();
 	}
 	return;
 }
@@ -254,65 +193,50 @@ void CChessUI::UIRender::RendBG()
 void CChessUI::UIRender::Reset()
 {
 	//0-15 at bottom, 16-31 at top of board
+	for (int i = 0; i < PIECE_NUM_MAX; i++)
+	{
+		if (pieces[i] != nullptr)
+		{
+			delete pieces[i];
+			pieces[i] = nullptr;
+		}
+	}
 
-	for (int i = 0; i < 32; i++)
-	{
-		pieces[i].moving_time = 0;
-		pieces[i].status = PIECE_STATIC;
-	}
-	if (side_red)
-	{
-		for (int i = 0; i < 16; i++)
-		{
-			pieces[i].side_red = 1;
-			pieces[i + 16].side_red = 0;
-		}
-	}
-	else
-	{
-		for (int i = 0; i < 16; i++)
-		{
-			pieces[i + 16].side_red = 1;
-			pieces[i].side_red = 0;
-		}
-	}
-	for (const int offset : {0, 16})
-	{
-		pieces[BOARD_X_MIN + offset].type = pieces[BOARD_X_MAX + offset].type = PIECE_ROOK;
-		pieces[BOARD_X_MIN + 1 + offset].type = pieces[BOARD_X_MAX - 1 + offset].type = PIECE_HORSE;
-		pieces[BOARD_X_MIN + 2 + offset].type = pieces[BOARD_X_MAX - 2 + offset].type = PIECE_ELEPHANT;
-		pieces[BOARD_X_MIN + 3 + offset].type = pieces[BOARD_X_MAX - 3 + offset].type = PIECE_MANDARIN;
-		pieces[BOARD_X_MIN + 4 + offset].type = PIECE_KING;
-		pieces[BOARD_X_MAX + 1 + offset].type = pieces[BOARD_X_MAX + 2 + offset].type = PIECE_CANNON;
-		for (int j = 3; j < 8; j++)
-		{
-			pieces[BOARD_X_MAX + j + offset].type = PIECE_PAWN;
-		}
-	}
+	pieces[0] = new PIECE_UI(BOARD_X_MIN, BOARD_Y_MIN, ChessPieceType::PIECE_ROOK, !side_red);
+	pieces[1] = new PIECE_UI(BOARD_X_MIN + 1, BOARD_Y_MIN, ChessPieceType::PIECE_HORSE, !side_red);
+	pieces[2] = new PIECE_UI(BOARD_X_MIN + 2, BOARD_Y_MIN, ChessPieceType::PIECE_ELEPHANT, !side_red);
+	pieces[3] = new PIECE_UI(BOARD_X_MIN + 3, BOARD_Y_MIN, ChessPieceType::PIECE_MANDARIN, !side_red);
+	pieces[4] = new PIECE_UI(BOARD_X_MIN + 4, BOARD_Y_MIN, ChessPieceType::PIECE_KING, !side_red);
+	pieces[5] = new PIECE_UI(BOARD_X_MAX, BOARD_Y_MIN, ChessPieceType::PIECE_ROOK, !side_red);
+	pieces[6] = new PIECE_UI(BOARD_X_MAX - 1, BOARD_Y_MIN, ChessPieceType::PIECE_HORSE, !side_red);
+	pieces[7] = new PIECE_UI(BOARD_X_MAX - 2, BOARD_Y_MIN, ChessPieceType::PIECE_ELEPHANT, !side_red);
+	pieces[8] = new PIECE_UI(BOARD_X_MAX - 3, BOARD_Y_MIN, ChessPieceType::PIECE_MANDARIN, !side_red);
+	pieces[9] = new PIECE_UI(BOARD_X_MIN + 1, BOARD_Y_MIN+2, ChessPieceType::PIECE_CANNON, !side_red);
+	pieces[10] = new PIECE_UI(BOARD_X_MAX - 1, BOARD_Y_MIN+ 2, ChessPieceType::PIECE_CANNON, !side_red);
+	pieces[11] = new PIECE_UI(BOARD_X_MIN, BOARD_Y_MIN + 3, ChessPieceType::PIECE_PAWN, !side_red);
+	pieces[12] = new PIECE_UI(BOARD_X_MIN + 2, BOARD_Y_MIN + 3, ChessPieceType::PIECE_PAWN, !side_red);
+	pieces[13] = new PIECE_UI(BOARD_X_MIN + 4, BOARD_Y_MIN + 3, ChessPieceType::PIECE_PAWN, !side_red);
+	pieces[14] = new PIECE_UI(BOARD_X_MIN + 6, BOARD_Y_MIN + 3, ChessPieceType::PIECE_PAWN, !side_red);
+	pieces[15] = new PIECE_UI(BOARD_X_MAX, BOARD_Y_MIN + 3, ChessPieceType::PIECE_PAWN, !side_red);
+
+	pieces[16] = new PIECE_UI(BOARD_X_MIN, BOARD_Y_MAX, ChessPieceType::PIECE_ROOK, side_red);
+	pieces[17] = new PIECE_UI(BOARD_X_MIN + 1, BOARD_Y_MAX, ChessPieceType::PIECE_HORSE, side_red);
+	pieces[18] = new PIECE_UI(BOARD_X_MIN + 2, BOARD_Y_MAX, ChessPieceType::PIECE_ELEPHANT, side_red);
+	pieces[19] = new PIECE_UI(BOARD_X_MIN + 3, BOARD_Y_MAX, ChessPieceType::PIECE_MANDARIN, side_red);
+	pieces[20] = new PIECE_UI(BOARD_X_MIN + 4, BOARD_Y_MAX, ChessPieceType::PIECE_KING, side_red);
+	pieces[21] = new PIECE_UI(BOARD_X_MAX, BOARD_Y_MAX, ChessPieceType::PIECE_ROOK, side_red);
+	pieces[22] = new PIECE_UI(BOARD_X_MAX - 1, BOARD_Y_MAX, ChessPieceType::PIECE_HORSE, side_red);
+	pieces[23] = new PIECE_UI(BOARD_X_MAX - 2, BOARD_Y_MAX, ChessPieceType::PIECE_ELEPHANT, side_red);
+	pieces[24] = new PIECE_UI(BOARD_X_MAX - 3, BOARD_Y_MAX, ChessPieceType::PIECE_MANDARIN, side_red);
+	pieces[25] = new PIECE_UI(BOARD_X_MIN + 1, BOARD_Y_MAX - 2, ChessPieceType::PIECE_CANNON, side_red);
+	pieces[26] = new PIECE_UI(BOARD_X_MAX - 1, BOARD_Y_MAX - 2, ChessPieceType::PIECE_CANNON, side_red);
+	pieces[27] = new PIECE_UI(BOARD_X_MIN, BOARD_Y_MAX - 3, ChessPieceType::PIECE_PAWN, side_red);
+	pieces[28] = new PIECE_UI(BOARD_X_MIN + 2, BOARD_Y_MAX - 3, ChessPieceType::PIECE_PAWN, side_red);
+	pieces[29] = new PIECE_UI(BOARD_X_MIN + 4, BOARD_Y_MAX - 3, ChessPieceType::PIECE_PAWN, side_red);
+	pieces[30] = new PIECE_UI(BOARD_X_MIN + 6, BOARD_Y_MAX - 3, ChessPieceType::PIECE_PAWN, side_red);
+	pieces[31] = new PIECE_UI(BOARD_X_MAX, BOARD_Y_MAX - 3, ChessPieceType::PIECE_PAWN, side_red);
+
 	
-	for (int i = 0; i < 9; i++)
-	{
-		pieces[i].x = BOARD_X_MIN + i, pieces[i].y = BOARD_Y_MAX;
-		pieces[i + 16].x = BOARD_X_MIN + i, pieces[i + 16].y = BOARD_Y_MIN;
-	}
-	
-	//PIECE_CANNON
-	pieces[9].x = BOARD_X_MIN + 1, pieces[9].y = BOARD_Y_MAX - 2;
-	pieces[10].x = BOARD_X_MAX - 1, pieces[10].y = BOARD_Y_MAX - 2;
-	pieces[25].x = BOARD_X_MIN + 1, pieces[25].y = BOARD_Y_MIN + 2;
-	pieces[26].x = BOARD_X_MAX - 1, pieces[26].y = BOARD_Y_MIN + 2;
-
-	for (int i = 11; i < 16; i++)	//PIECE_PAWN
-	{
-		pieces[i].x = BOARD_X_MIN + (i - 11) * 2, pieces[i].y = BOARD_Y_MAX - 4;
-		pieces[i + 16].x = BOARD_X_MIN + (i - 11) * 2, pieces[i + 16].y = BOARD_Y_MIN + 4;
-	}
-
-	for (int i = 0; i < 32; i++)
-	{
-		pieces[i].posx = map_line_x[pieces[i].x];
-		pieces[i].posy = map_line_y[pieces[i].y];
-	}
 	return;
 }
 
@@ -348,7 +272,7 @@ bool CChessUI::UIRender::LoadPiecesAtlasInfo()
 	}
 	//find corresponding data
 	
-	piece_rect_set.clear();
+	PIECE_UI::piece_rect_set.clear();
 	for (int i = 0; i < text->lines; i++)
 	{
 		for (auto& j : piece_names)
@@ -367,14 +291,14 @@ bool CChessUI::UIRender::LoadPiecesAtlasInfo()
 					debugger_main.writelog(DWARNNING, "exception when stoi in CChessUI::UIRender::LoadPiecesAtlasInfo(): " + string(e.what()),__LINE__);
 					return 0;
 				}
-				piece_rect_set[j] = rect;
+				PIECE_UI::piece_rect_set[j] = rect;
 				break;
 			}
 		}
 	}
 	for (auto& j : piece_names)
 	{
-		if (piece_rect_set.find(j) == piece_rect_set.end())
+		if (PIECE_UI::piece_rect_set.find(j) == PIECE_UI::piece_rect_set.end())
 		{
 			debugger_main.writelog(DWARNNING, "info not complete in CChessUI::UIRender::LoadPiecesAtlasInfo() " + string(j), __LINE__);
 			return 0;
@@ -392,5 +316,184 @@ void CChessUI::UIRender::MoveTo(int x, int y, bool eat)
 }
 
 void CChessUI::UIRender::Eat(int x, int y)
+{
+}
+
+PIECE_UI::PIECE_UI(int x, int y, ChessPieceType type, bool side_red)
+{
+	this->x = x, this->y = y;
+	posx = map_line_x[x];
+	posy = map_line_y[y];
+	this->type = type;
+	this->side_red = side_red;
+	status = Piece_Move_Status::PIECE_STATIC;
+	if (side_red)
+	{
+		switch (type)
+		{
+		case CChessBase::PIECE_NULL:
+			break;
+		case CChessBase::PIECE_PAWN:
+			static_rect = piece_rect_set["red_pawn"].static_rect;
+			up_rect = piece_rect_set["red_pawn"].up_rect;
+			down_rect = piece_rect_set["red_pawn"].down_rect;
+			break;
+		case CChessBase::PIECE_ROOK:
+			static_rect = piece_rect_set["red_rook"].static_rect;
+			up_rect = piece_rect_set["red_rook"].up_rect;
+			down_rect = piece_rect_set["red_rook"].down_rect;
+			break;
+		case CChessBase::PIECE_HORSE:
+			static_rect = piece_rect_set["red_horse"].static_rect;
+			up_rect = piece_rect_set["red_horse"].up_rect;
+			down_rect = piece_rect_set["red_horse"].down_rect;
+			break;
+		case CChessBase::PIECE_ELEPHANT:
+			static_rect = piece_rect_set["red_elephant"].static_rect;
+			up_rect = piece_rect_set["red_elephant"].up_rect;
+			down_rect = piece_rect_set["red_elephant"].down_rect;
+			break;
+		case CChessBase::PIECE_CANNON:
+			static_rect = piece_rect_set["red_cannon"].static_rect;
+			up_rect = piece_rect_set["red_cannon"].up_rect;
+			down_rect = piece_rect_set["red_cannon"].down_rect;
+			break;
+		case CChessBase::PIECE_MANDARIN:
+			static_rect = piece_rect_set["red_mandarin"].static_rect;
+			up_rect = piece_rect_set["red_mandarin"].up_rect;
+			down_rect = piece_rect_set["red_mandarin"].down_rect;
+			break;
+		case CChessBase::PIECE_KING:
+			static_rect = piece_rect_set["red_king"].static_rect;
+			up_rect = piece_rect_set["red_king"].up_rect;
+			down_rect = piece_rect_set["red_king"].down_rect;
+			break;
+		default:
+			break;
+		}
+	}
+	else
+	{
+		switch (type)
+		{
+		case CChessBase::PIECE_NULL:
+			break;
+		case CChessBase::PIECE_PAWN:
+			static_rect = piece_rect_set["black_pawn"].static_rect;
+			up_rect = piece_rect_set["black_pawn"].up_rect;
+			down_rect = piece_rect_set["black_pawn"].down_rect;
+			break;
+		case CChessBase::PIECE_ROOK:
+			static_rect = piece_rect_set["black_rook"].static_rect;
+			up_rect = piece_rect_set["black_rook"].up_rect;
+			down_rect = piece_rect_set["black_rook"].down_rect;
+			break;
+		case CChessBase::PIECE_HORSE:
+			static_rect = piece_rect_set["black_horse"].static_rect;
+			up_rect = piece_rect_set["black_horse"].up_rect;
+			down_rect = piece_rect_set["black_horse"].down_rect;
+			break;
+		case CChessBase::PIECE_ELEPHANT:
+			static_rect = piece_rect_set["black_elephant"].static_rect;
+			up_rect = piece_rect_set["black_elephant"].up_rect;
+			down_rect = piece_rect_set["black_elephant"].down_rect;
+			break;
+		case CChessBase::PIECE_CANNON:
+			static_rect = piece_rect_set["black_cannon"].static_rect;
+			up_rect = piece_rect_set["black_cannon"].up_rect;
+			down_rect = piece_rect_set["black_cannon"].down_rect;
+			break;
+		case CChessBase::PIECE_MANDARIN:
+			static_rect = piece_rect_set["black_mandarin"].static_rect;
+			up_rect = piece_rect_set["black_mandarin"].up_rect;
+			down_rect = piece_rect_set["black_mandarin"].down_rect;
+			break;
+		case CChessBase::PIECE_KING:
+			static_rect = piece_rect_set["black_king"].static_rect;
+			up_rect = piece_rect_set["black_king"].up_rect;
+			down_rect = piece_rect_set["black_king"].down_rect;
+			break;
+		default:
+			break;
+		}
+	}
+	
+}
+
+void PIECE_UI::rend()
+{
+	if (x > BOARD_X_MAX || y > BOARD_Y_MAX)
+	{
+		debugger_main.add_output_line("illegal x,y in CChessUI::UIRender::RendStaticPiece() " + to_string(x) + "," + to_string(y));
+		return;
+	}
+	ID2D1Bitmap* texture = g_rm.getTexture("pieces");
+
+	if (side_red)
+	{
+		switch (type)
+		{
+		case CChessBase::PIECE_NULL:
+			break;
+		case CChessBase::PIECE_PAWN:
+			DrawBitmap_1(texture, piece_rect[x][y], static_rect, 1.0f);
+			break;
+		case CChessBase::PIECE_ROOK:
+			DrawBitmap_1(texture, piece_rect[x][y], static_rect, 1.0f);
+			break;
+		case CChessBase::PIECE_HORSE:
+			DrawBitmap_1(texture, piece_rect[x][y], static_rect, 1.0f);
+			break;
+		case CChessBase::PIECE_ELEPHANT:
+			DrawBitmap_1(texture, piece_rect[x][y], static_rect, 1.0f);
+			break;
+		case CChessBase::PIECE_CANNON:
+			DrawBitmap_1(texture, piece_rect[x][y], static_rect, 1.0f);
+			break;
+		case CChessBase::PIECE_MANDARIN:
+			DrawBitmap_1(texture, piece_rect[x][y], static_rect, 1.0f);
+			break;
+		case CChessBase::PIECE_KING:
+			DrawBitmap_1(texture, piece_rect[x][y], static_rect, 1.0f);
+			break;
+		default:
+			break;
+		}
+	}
+	else
+	{
+		switch (type)
+		{
+		case CChessBase::PIECE_NULL:
+			break;
+		case CChessBase::PIECE_PAWN:
+			DrawBitmap_1(texture, piece_rect[x][y], static_rect, 1.0f);
+			break;
+		case CChessBase::PIECE_ROOK:
+			DrawBitmap_1(texture, piece_rect[x][y], static_rect, 1.0f);
+			break;
+		case CChessBase::PIECE_HORSE:
+			DrawBitmap_1(texture, piece_rect[x][y], static_rect, 1.0f);
+			break;
+		case CChessBase::PIECE_ELEPHANT:
+			DrawBitmap_1(texture, piece_rect[x][y], static_rect, 1.0f);
+			break;
+		case CChessBase::PIECE_CANNON:
+			DrawBitmap_1(texture, piece_rect[x][y], static_rect, 1.0f);
+			break;
+		case CChessBase::PIECE_MANDARIN:
+			DrawBitmap_1(texture, piece_rect[x][y], static_rect, 1.0f);
+			break;
+		case CChessBase::PIECE_KING:
+			DrawBitmap_1(texture, piece_rect[x][y], static_rect, 1.0f);
+			break;
+		default:
+			break;
+		}
+	}
+	return;
+}
+
+void PIECE_UI::update()
 {
 }

@@ -28,6 +28,12 @@ namespace CChessBase
 		ChessPieceType board[9][10];
 		bool piece_side[9][10];
 	};
+	struct PIECE_ATLAS_INFO
+	{
+		D2D1_RECT_F static_rect;
+		D2D1_RECT_F up_rect;
+		D2D1_RECT_F down_rect;
+	};
 	constexpr int BOARD_Y_MAX = 9, BOARD_X_MAX = 8, BOARD_Y_MIN = 0, BOARD_X_MIN = 0;
 	constexpr static int SIDE_BLACK = 0;
 	constexpr static int SIDE_RED = 1;
