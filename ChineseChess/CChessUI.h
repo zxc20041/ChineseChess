@@ -4,6 +4,13 @@
 
 using namespace CChessBase;
 
+struct PIECE_ATLAS_INFO
+{
+	D2D1_RECT_F static_rect;
+	D2D1_RECT_F up_rect;
+	D2D1_RECT_F down_rect;
+};
+
 //todo: add PIECE_UI class
 class PIECE_UI
 {

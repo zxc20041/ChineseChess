@@ -150,6 +150,8 @@
   <ItemGroup>
     <ClInclude Include="audio_thread.h" />
     <ClInclude Include="CChessBase.h" />
+    <ClInclude Include="CChessEngineAdapter.h" />
+    <ClInclude Include="CChessEngineCore.h" />
     <ClInclude Include="CChessUI.h" />
     <ClInclude Include="ChineseChess.h" />
     <ClInclude Include="framework.h" />
@@ -164,6 +166,8 @@
     <ClCompile Include="AppMain.cpp" />
     <ClCompile Include="audio_thread.cpp" />
     <ClCompile Include="CChessBase.cpp" />
+    <ClCompile Include="CChessEngineAdapter.cpp" />
+    <ClCompile Include="CChessEngineCore.cpp" />
     <ClCompile Include="CChessUI.cpp" />
     <ClCompile Include="ChineseChess.cpp" />
     <ClCompile Include="framework_base.cpp" />
