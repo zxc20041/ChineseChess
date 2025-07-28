@@ -36,6 +36,8 @@ namespace CChessBase
 	};
 	struct PiecePosDesc
 	{
+		PiecePosDesc() { x = 0, y = 0; }
+		PiecePosDesc(int _x,int _y) { x = _x, y = _y; }
 		int x, y;
 	};
 	struct PieceMoveDesc

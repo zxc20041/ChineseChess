@@ -4569,6 +4569,10 @@ void init_once()
     g_hIMC = ImmAssociateContext(hWnd, NULL);   //ÊäÈë·¨Ëø¶¨
 
     CreateD3DResource(hWnd);
+    if (quit_single)
+    {
+        return;
+    }
     debugger_main.writelog(0,"Render resolution @" + to_string(orix) + "x" + to_string(oriy));
 
     res[0].filename = ".\\pic\\home_setting.png"; res[0].md5 = "D99A737976059CB3A2D89928A47B0C36";//textures of ui
@@ -4720,84 +4724,6 @@ void process_quit()
     return;
 }
 
-
-//string input_username = "defaultUser";
-//float enter_notice_time = 0;
-//void rend_new_user()
-//{
-//    static Button* okButton;
-//    static LABEL* inputLabel;
-//    g_pD2DDeviceContext->Clear(D2D1::ColorF(D2D1::ColorF::Snow));
-//    if (page_status == 0)
-//    {
-//        InitPage(3001);
-//        g_am.playEffectSound(10);
-//        g_cm.Clear();
-//        okButton =g_cm.CreateButton(730, 650, 870, 720, "OK", g_pBrushBlack, g_pBrushYellow, g_pBrushLightGreen);
-//        inputLabel=g_cm.CreateLabel(600, 450, 1000, 550, "Please wait while initializing", g_pBrushPink, NULL, g_pBrushBlack, NULL, 1);
-//        //g_cm.CreateLabel(300, 350, 1100, 450, lan[0].enter_username, NULL, NULL, g_pBrushBlack, NULL, 3);
-//        //input_expand = 1;
-//        page_status = 1;
-//        okButton->setClicked();
-//    }
-//    else if (page_status == 1)
-//    {
-//        enter_notice_time -= frmtm;
-//        
-//        if (enter_notice_time > 0)
-//        {
-//            inputLabel->setText("Please wait while initializing_");
-//        }
-//        else
-//        {
-//            inputLabel->setText("Please wait while initializing");
-//        }
-//        if (enter_notice_time < -0.5)
-//        {
-//            enter_notice_time = 0.5;
-//        }
-//
-//        if (okButton->getClicked())
-//        {
-//            g_am.playEffectSound(9);
-//            okButton->setText("loading...");
-//            okButton->setBrush3(g_pBrushYellow);
-//            usernameC = input_username;
-//            thread_IO_request_userinit = 1;
-//            page_status = 3;
-//            
-//        }
-//        DrawTextA_1(
-//            "Setup",
-//            g_pTextFormatNormal,
-//            D2D1::RectF(to_screen(200), to_screen(150), to_screen(600),to_screen(300)),
-//            g_pBrushBlack
-//        );
-//    }
-//    else if (page_status == 3)
-//    {
-//
-//        if (thread_IO_request_userinit == 0)
-//        {
-//            okButton->setText("Done");
-//            okButton->setBrush3(g_pBrushLightGreen);
-//            self_restart();
-//            thread_IO_request_userinit = -3;
-//        }
-//        else if (thread_IO_request_userinit == -1)
-//        {
-//            okButton->setText("Error");
-//            okButton->setBrush3(g_pBrushRed);
-//
-//        }
-//        else if (thread_IO_request_userinit == -2)
-//        {
-//            //Sleep(500);
-//            thread_IO_request_userinit = -3;
-//        }
-//    }
-//    return;
-//}
 
 void rendPage()
 {
