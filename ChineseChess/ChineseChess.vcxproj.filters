@@ -54,6 +54,9 @@
     <ClInclude Include="CChessEngineCore.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="LocalPVP.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ChineseChess.cpp">
@@ -90,6 +93,9 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="CChessEngineCore.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="LocalPVP.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

@@ -56,15 +56,16 @@ bool CChessEngine::PositionInMandarinArea(int x, int y, bool my_side)
 			return 1;
 		}
 	}
-	return ;
+	return 0;
 }
 
 bool CChessEngine::ObeyRule_KingMeetKing(int x, int y)
 {
-	if (!PositionInBoard(x, y))
+	if (!PositionInBoard(x, y)|| map.board[x][y] == PIECE_NULL)
 	{
 		return 0;
 	}
+
 	int piece_between_num = 0, king_num = 0;
 	bool start = 0, piece_between_kings = 0;
 	for (int i = 0; i < 10; i++)
@@ -129,7 +130,7 @@ bool CChessEngine::ObeyRule_KingMeetKing_for_king(int target_x, int target_y)
 //車 移动范围：任何位置移动 规则：可以水平或垂直方向移动任意个无阻碍的点
 //炮/砲 移动范围：任何位置移动 规则：移动起来和车很相似，但它必须跳过一个棋子来吃掉对方棋子。
 //兵/卒 移动范围：任何位置移动 规则：过河界前，每步只能向前移动一点。过河界后，增加了向左右移动的能力，兵（卒）不允许向后移动。
-vector<PiecePosDesc> CChessEngine::GetAvailableSteps(PiecePosDesc& pos)
+vector<PiecePosDesc> CChessEngine::GetAvailableSteps(PiecePosDesc pos)
 {
 	bool this_side = map.piece_side[pos.x][pos.y];
 	bool cannon_jump_piece = 0;

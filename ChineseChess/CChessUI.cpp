@@ -11,6 +11,9 @@ float PIECE_UI::map_line_x[BOARD_X_MAX + 1], PIECE_UI::map_line_y[BOARD_Y_MAX + 
 CChessUI::CChessUI()
 {
 	memset(&map, 0, sizeof map);
+	side_red = 1;
+	piece_selected = 0;
+	selected_piece_x = 0, selected_piece_y = 0;
 }
 
 CChessUI::~CChessUI()
@@ -19,7 +22,9 @@ CChessUI::~CChessUI()
 
 void CChessUI::ClickAt(int line, int column)
 {
+
 }
+
 
 void CChessUI::Reset()
 {
@@ -41,12 +46,10 @@ void CChessUI::Rend()
 
 CChessUI::UIRender::UIRender()
 {
-	timeScale=1;
+	timeScale = 1;
 	memset(pieces,0,sizeof(pieces));
-
 	side_red = 1;
-	piece_selected = 0;
-	selected_piece_x = 0, selected_piece_y = 0;
+	
 
 	map_area_posx1 = 380, map_area_posx2 = 1170, map_area_posy1 = 70, map_area_posy2 = 835;
 	block_length_x = (map_area_posx2 - map_area_posx1) / 8;
@@ -97,7 +100,7 @@ void CChessUI::UIRender::RendPieces()
 {
 	for (auto &i : pieces)
 	{
-		i->rend();
+		i->rend(side_red);
 	}
 	return;
 }
@@ -190,9 +193,10 @@ void CChessUI::UIRender::RendBG()
 	return;
 }
 
+
 void CChessUI::UIRender::Reset()
 {
-	//0-15 at bottom, 16-31 at top of board
+	//0-15(black) at top, 16-31(red) at bottom of board
 	for (int i = 0; i < PIECE_NUM_MAX; i++)
 	{
 		if (pieces[i] != nullptr)
@@ -202,39 +206,39 @@ void CChessUI::UIRender::Reset()
 		}
 	}
 
-	pieces[0] = new PIECE_UI(BOARD_X_MIN, BOARD_Y_MIN, ChessPieceType::PIECE_ROOK, !side_red);
-	pieces[1] = new PIECE_UI(BOARD_X_MIN + 1, BOARD_Y_MIN, ChessPieceType::PIECE_HORSE, !side_red);
-	pieces[2] = new PIECE_UI(BOARD_X_MIN + 2, BOARD_Y_MIN, ChessPieceType::PIECE_ELEPHANT, !side_red);
-	pieces[3] = new PIECE_UI(BOARD_X_MIN + 3, BOARD_Y_MIN, ChessPieceType::PIECE_MANDARIN, !side_red);
-	pieces[4] = new PIECE_UI(BOARD_X_MIN + 4, BOARD_Y_MIN, ChessPieceType::PIECE_KING, !side_red);
-	pieces[5] = new PIECE_UI(BOARD_X_MAX, BOARD_Y_MIN, ChessPieceType::PIECE_ROOK, !side_red);
-	pieces[6] = new PIECE_UI(BOARD_X_MAX - 1, BOARD_Y_MIN, ChessPieceType::PIECE_HORSE, !side_red);
-	pieces[7] = new PIECE_UI(BOARD_X_MAX - 2, BOARD_Y_MIN, ChessPieceType::PIECE_ELEPHANT, !side_red);
-	pieces[8] = new PIECE_UI(BOARD_X_MAX - 3, BOARD_Y_MIN, ChessPieceType::PIECE_MANDARIN, !side_red);
-	pieces[9] = new PIECE_UI(BOARD_X_MIN + 1, BOARD_Y_MIN+2, ChessPieceType::PIECE_CANNON, !side_red);
-	pieces[10] = new PIECE_UI(BOARD_X_MAX - 1, BOARD_Y_MIN+ 2, ChessPieceType::PIECE_CANNON, !side_red);
-	pieces[11] = new PIECE_UI(BOARD_X_MIN, BOARD_Y_MIN + 3, ChessPieceType::PIECE_PAWN, !side_red);
-	pieces[12] = new PIECE_UI(BOARD_X_MIN + 2, BOARD_Y_MIN + 3, ChessPieceType::PIECE_PAWN, !side_red);
-	pieces[13] = new PIECE_UI(BOARD_X_MIN + 4, BOARD_Y_MIN + 3, ChessPieceType::PIECE_PAWN, !side_red);
-	pieces[14] = new PIECE_UI(BOARD_X_MIN + 6, BOARD_Y_MIN + 3, ChessPieceType::PIECE_PAWN, !side_red);
-	pieces[15] = new PIECE_UI(BOARD_X_MAX, BOARD_Y_MIN + 3, ChessPieceType::PIECE_PAWN, !side_red);
+	pieces[0] = new PIECE_UI(BOARD_X_MIN, BOARD_Y_MIN, ChessPieceType::PIECE_ROOK, 0);
+	pieces[1] = new PIECE_UI(BOARD_X_MIN + 1, BOARD_Y_MIN, ChessPieceType::PIECE_HORSE, 0);
+	pieces[2] = new PIECE_UI(BOARD_X_MIN + 2, BOARD_Y_MIN, ChessPieceType::PIECE_ELEPHANT, 0);
+	pieces[3] = new PIECE_UI(BOARD_X_MIN + 3, BOARD_Y_MIN, ChessPieceType::PIECE_MANDARIN, 0);
+	pieces[4] = new PIECE_UI(BOARD_X_MIN + 4, BOARD_Y_MIN, ChessPieceType::PIECE_KING, 0);
+	pieces[5] = new PIECE_UI(BOARD_X_MAX, BOARD_Y_MIN, ChessPieceType::PIECE_ROOK, 0);
+	pieces[6] = new PIECE_UI(BOARD_X_MAX - 1, BOARD_Y_MIN, ChessPieceType::PIECE_HORSE, 0);
+	pieces[7] = new PIECE_UI(BOARD_X_MAX - 2, BOARD_Y_MIN, ChessPieceType::PIECE_ELEPHANT, 0);
+	pieces[8] = new PIECE_UI(BOARD_X_MAX - 3, BOARD_Y_MIN, ChessPieceType::PIECE_MANDARIN, 0);
+	pieces[9] = new PIECE_UI(BOARD_X_MIN + 1, BOARD_Y_MIN+2, ChessPieceType::PIECE_CANNON, 0);
+	pieces[10] = new PIECE_UI(BOARD_X_MAX - 1, BOARD_Y_MIN+ 2, ChessPieceType::PIECE_CANNON, 0);
+	pieces[11] = new PIECE_UI(BOARD_X_MIN, BOARD_Y_MIN + 3, ChessPieceType::PIECE_PAWN, 0);
+	pieces[12] = new PIECE_UI(BOARD_X_MIN + 2, BOARD_Y_MIN + 3, ChessPieceType::PIECE_PAWN, 0);
+	pieces[13] = new PIECE_UI(BOARD_X_MIN + 4, BOARD_Y_MIN + 3, ChessPieceType::PIECE_PAWN, 0);
+	pieces[14] = new PIECE_UI(BOARD_X_MIN + 6, BOARD_Y_MIN + 3, ChessPieceType::PIECE_PAWN, 0);
+	pieces[15] = new PIECE_UI(BOARD_X_MAX, BOARD_Y_MIN + 3, ChessPieceType::PIECE_PAWN, 0);
 
-	pieces[16] = new PIECE_UI(BOARD_X_MIN, BOARD_Y_MAX, ChessPieceType::PIECE_ROOK, side_red);
-	pieces[17] = new PIECE_UI(BOARD_X_MIN + 1, BOARD_Y_MAX, ChessPieceType::PIECE_HORSE, side_red);
-	pieces[18] = new PIECE_UI(BOARD_X_MIN + 2, BOARD_Y_MAX, ChessPieceType::PIECE_ELEPHANT, side_red);
-	pieces[19] = new PIECE_UI(BOARD_X_MIN + 3, BOARD_Y_MAX, ChessPieceType::PIECE_MANDARIN, side_red);
-	pieces[20] = new PIECE_UI(BOARD_X_MIN + 4, BOARD_Y_MAX, ChessPieceType::PIECE_KING, side_red);
-	pieces[21] = new PIECE_UI(BOARD_X_MAX, BOARD_Y_MAX, ChessPieceType::PIECE_ROOK, side_red);
-	pieces[22] = new PIECE_UI(BOARD_X_MAX - 1, BOARD_Y_MAX, ChessPieceType::PIECE_HORSE, side_red);
-	pieces[23] = new PIECE_UI(BOARD_X_MAX - 2, BOARD_Y_MAX, ChessPieceType::PIECE_ELEPHANT, side_red);
-	pieces[24] = new PIECE_UI(BOARD_X_MAX - 3, BOARD_Y_MAX, ChessPieceType::PIECE_MANDARIN, side_red);
-	pieces[25] = new PIECE_UI(BOARD_X_MIN + 1, BOARD_Y_MAX - 2, ChessPieceType::PIECE_CANNON, side_red);
-	pieces[26] = new PIECE_UI(BOARD_X_MAX - 1, BOARD_Y_MAX - 2, ChessPieceType::PIECE_CANNON, side_red);
-	pieces[27] = new PIECE_UI(BOARD_X_MIN, BOARD_Y_MAX - 3, ChessPieceType::PIECE_PAWN, side_red);
-	pieces[28] = new PIECE_UI(BOARD_X_MIN + 2, BOARD_Y_MAX - 3, ChessPieceType::PIECE_PAWN, side_red);
-	pieces[29] = new PIECE_UI(BOARD_X_MIN + 4, BOARD_Y_MAX - 3, ChessPieceType::PIECE_PAWN, side_red);
-	pieces[30] = new PIECE_UI(BOARD_X_MIN + 6, BOARD_Y_MAX - 3, ChessPieceType::PIECE_PAWN, side_red);
-	pieces[31] = new PIECE_UI(BOARD_X_MAX, BOARD_Y_MAX - 3, ChessPieceType::PIECE_PAWN, side_red);
+	pieces[16] = new PIECE_UI(BOARD_X_MIN, BOARD_Y_MAX, ChessPieceType::PIECE_ROOK, 1);
+	pieces[17] = new PIECE_UI(BOARD_X_MIN + 1, BOARD_Y_MAX, ChessPieceType::PIECE_HORSE, 1);
+	pieces[18] = new PIECE_UI(BOARD_X_MIN + 2, BOARD_Y_MAX, ChessPieceType::PIECE_ELEPHANT, 1);
+	pieces[19] = new PIECE_UI(BOARD_X_MIN + 3, BOARD_Y_MAX, ChessPieceType::PIECE_MANDARIN, 1);
+	pieces[20] = new PIECE_UI(BOARD_X_MIN + 4, BOARD_Y_MAX, ChessPieceType::PIECE_KING, 1);
+	pieces[21] = new PIECE_UI(BOARD_X_MAX, BOARD_Y_MAX, ChessPieceType::PIECE_ROOK, 1);
+	pieces[22] = new PIECE_UI(BOARD_X_MAX - 1, BOARD_Y_MAX, ChessPieceType::PIECE_HORSE, 1);
+	pieces[23] = new PIECE_UI(BOARD_X_MAX - 2, BOARD_Y_MAX, ChessPieceType::PIECE_ELEPHANT, 1);
+	pieces[24] = new PIECE_UI(BOARD_X_MAX - 3, BOARD_Y_MAX, ChessPieceType::PIECE_MANDARIN, 1);
+	pieces[25] = new PIECE_UI(BOARD_X_MIN + 1, BOARD_Y_MAX - 2, ChessPieceType::PIECE_CANNON, 1);
+	pieces[26] = new PIECE_UI(BOARD_X_MAX - 1, BOARD_Y_MAX - 2, ChessPieceType::PIECE_CANNON, 1);
+	pieces[27] = new PIECE_UI(BOARD_X_MIN, BOARD_Y_MAX - 3, ChessPieceType::PIECE_PAWN, 1);
+	pieces[28] = new PIECE_UI(BOARD_X_MIN + 2, BOARD_Y_MAX - 3, ChessPieceType::PIECE_PAWN, 1);
+	pieces[29] = new PIECE_UI(BOARD_X_MIN + 4, BOARD_Y_MAX - 3, ChessPieceType::PIECE_PAWN, 1);
+	pieces[30] = new PIECE_UI(BOARD_X_MIN + 6, BOARD_Y_MAX - 3, ChessPieceType::PIECE_PAWN, 1);
+	pieces[31] = new PIECE_UI(BOARD_X_MAX, BOARD_Y_MAX - 3, ChessPieceType::PIECE_PAWN, 1);
 
 	
 	return;
@@ -305,6 +309,12 @@ bool CChessUI::UIRender::LoadPiecesAtlasInfo()
 		}
 	}
 	return 1;
+}
+
+void CChessUI::UIRender::SetSide(bool side_red)
+{
+	this->side_red = side_red;
+	return;
 }
 
 void CChessUI::UIRender::SelectPiece(int x, int y)
@@ -417,79 +427,31 @@ PIECE_UI::PIECE_UI(int x, int y, ChessPieceType type, bool side_red)
 			break;
 		}
 	}
-	
+	return;
 }
 
-void PIECE_UI::rend()
+void PIECE_UI::rend(bool board_side_red)
 {
 	if (x > BOARD_X_MAX || y > BOARD_Y_MAX)
 	{
 		debugger_main.add_output_line("illegal x,y in CChessUI::UIRender::RendStaticPiece() " + to_string(x) + "," + to_string(y));
 		return;
 	}
+	if (type == PIECE_NULL)
+	{
+		return;
+	}
 	ID2D1Bitmap* texture = g_rm.getTexture("pieces");
 
-	if (side_red)
+	if (board_side_red)
 	{
-		switch (type)
-		{
-		case CChessBase::PIECE_NULL:
-			break;
-		case CChessBase::PIECE_PAWN:
-			DrawBitmap_1(texture, piece_rect[x][y], static_rect, 1.0f);
-			break;
-		case CChessBase::PIECE_ROOK:
-			DrawBitmap_1(texture, piece_rect[x][y], static_rect, 1.0f);
-			break;
-		case CChessBase::PIECE_HORSE:
-			DrawBitmap_1(texture, piece_rect[x][y], static_rect, 1.0f);
-			break;
-		case CChessBase::PIECE_ELEPHANT:
-			DrawBitmap_1(texture, piece_rect[x][y], static_rect, 1.0f);
-			break;
-		case CChessBase::PIECE_CANNON:
-			DrawBitmap_1(texture, piece_rect[x][y], static_rect, 1.0f);
-			break;
-		case CChessBase::PIECE_MANDARIN:
-			DrawBitmap_1(texture, piece_rect[x][y], static_rect, 1.0f);
-			break;
-		case CChessBase::PIECE_KING:
-			DrawBitmap_1(texture, piece_rect[x][y], static_rect, 1.0f);
-			break;
-		default:
-			break;
-		}
+
+		DrawBitmap_1(texture, piece_rect[x][y], static_rect, 1.0f);
 	}
 	else
 	{
-		switch (type)
-		{
-		case CChessBase::PIECE_NULL:
-			break;
-		case CChessBase::PIECE_PAWN:
-			DrawBitmap_1(texture, piece_rect[x][y], static_rect, 1.0f);
-			break;
-		case CChessBase::PIECE_ROOK:
-			DrawBitmap_1(texture, piece_rect[x][y], static_rect, 1.0f);
-			break;
-		case CChessBase::PIECE_HORSE:
-			DrawBitmap_1(texture, piece_rect[x][y], static_rect, 1.0f);
-			break;
-		case CChessBase::PIECE_ELEPHANT:
-			DrawBitmap_1(texture, piece_rect[x][y], static_rect, 1.0f);
-			break;
-		case CChessBase::PIECE_CANNON:
-			DrawBitmap_1(texture, piece_rect[x][y], static_rect, 1.0f);
-			break;
-		case CChessBase::PIECE_MANDARIN:
-			DrawBitmap_1(texture, piece_rect[x][y], static_rect, 1.0f);
-			break;
-		case CChessBase::PIECE_KING:
-			DrawBitmap_1(texture, piece_rect[x][y], static_rect, 1.0f);
-			break;
-		default:
-			break;
-		}
+		//reflect position y
+		DrawBitmap_1(texture, piece_rect[x][BOARD_Y_MAX-y], static_rect, 1.0f);
 	}
 	return;
 }

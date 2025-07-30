@@ -10,9 +10,9 @@ public:
 
 	virtual void Reset() = 0;
 	
-	virtual std::vector<CChessBase::PiecePosDesc> GetAvailableSteps(CChessBase::PiecePosDesc& pos);
+	
 	virtual void MovePiece(CChessBase::PieceMoveDesc& move) = 0;
-	virtual void SelectPiece(CChessBase::PiecePosDesc& pos) = 0;
+	virtual std::vector<CChessBase::PiecePosDesc> SelectPiece(CChessBase::PiecePosDesc& pos) = 0;
 
 	virtual void SetSide(bool side_red) = 0;
 
@@ -53,6 +53,9 @@ private:
 		+---+---+---+---+---+---+---+---+---+
 		  a   b   c   d   e   f   g   h   i         */
 	//                 RED
+
+protected:
+	virtual std::vector<CChessBase::PiecePosDesc> GetAvailableSteps(CChessBase::PiecePosDesc pos);
 	CChessBase::CChessMap map;
 
 	bool side_red,current_side_red;
