@@ -2,6 +2,7 @@
 
 #include"framework_base.h"
 #include"CChessUI.h"
+#include"localPVP.h"
 
 class LocalGame_Page :public PAGE
 {
@@ -21,5 +22,6 @@ private:
     shared_ptr<Button> switchSideButton, returnButton;
 
     CChessUI CUI;
+    shared_ptr<CChessEngine>chessEngine;
     void OnLoad();
 };

@@ -47,6 +47,8 @@ void LocalGame_Page::Update()
 		Page_status = PAGE_PREPARED_STATUS;
 
 	}
+
+	CUI.Update();
 	if (returnButton->getClicked())
 	{
 		g_cm.CreateEffect(Effect::WHITE_SWITCH, cpos.x, cpos.y);
@@ -101,12 +103,17 @@ bool LocalGame_Page::ExitPage()
 
 void LocalGame_Page::OnLoad()
 {
+	chessEngine = make_shared<CChessLocalPVP>();
 	//resolve atlas data
 	if (!CUI.LoadPiecesAtlasInfo())
 	{
 		g_PageManager.SwitchPageTo(HOME_PAGE_INDEX);
 		g_am.playEffectSound(8);
 	}
+
+	CUI.SetEngine(chessEngine);
+
 	CUI.Reset();
+
 	return;
 }

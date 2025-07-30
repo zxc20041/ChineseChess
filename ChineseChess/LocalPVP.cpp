@@ -4,9 +4,17 @@ using namespace std;
 using namespace CChessBase;
 using namespace debugger;
 
+CChessLocalPVP::CChessLocalPVP():CChessEngine()
+{
+}
+
+CChessLocalPVP::~CChessLocalPVP()
+{
+}
+
 void CChessLocalPVP::Reset()
 {
-	memset(&map, sizeof(map), PIECE_NULL);
+	memset(&map, PIECE_NULL, sizeof(map));
 	
 	map.board[0][0] = PIECE_ROOK;
 	map.board[1][0] = PIECE_HORSE;
@@ -74,6 +82,10 @@ void CChessLocalPVP::MovePiece(CChessBase::PieceMoveDesc& move)
 			break;
 		}
 	}
+	if (current_side_red != map.piece_side[move.fromx][move.fromy])
+	{
+		valid = 0;
+	}
 	if (!valid)
 	{
 		debugger_main.writelog(DWARNNING, "target pos not found in CChessLocalPVP::MovePiece() " + to_string(move.fromx) + "," + to_string(move.fromy) + "->" + to_string(move.tox) + "," + to_string(move.toy), __LINE__);
@@ -81,6 +93,8 @@ void CChessLocalPVP::MovePiece(CChessBase::PieceMoveDesc& move)
 	}
 	map.board[move.tox][move.toy] = map.board[move.fromx][move.fromy];
 	map.piece_side[move.tox][move.toy] = map.piece_side[move.fromx][move.fromy];
+
+	current_side_red = !current_side_red;
 
 	for (int i = 0; i < 9; i++)
 	{

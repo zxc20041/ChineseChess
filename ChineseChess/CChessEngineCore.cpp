@@ -5,6 +5,7 @@ using namespace std;
 
 CChessEngine::CChessEngine()
 {
+	memset(&map, 0, sizeof(map));
 	side_red = 1, current_side_red = 1;
 }
 
@@ -436,4 +437,14 @@ vector<PiecePosDesc> CChessEngine::GetAvailableSteps(PiecePosDesc pos)
 		break;
 	}
     return result;
+}
+
+bool CChessEngine::GetSide()
+{
+	return side_red;
+}
+
+bool CChessEngine::GetCurrentSide()
+{
+	return current_side_red;
 }

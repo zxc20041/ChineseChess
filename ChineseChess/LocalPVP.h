@@ -4,6 +4,8 @@
 class CChessLocalPVP :public CChessEngine
 {
 public:
+	CChessLocalPVP();
+	~CChessLocalPVP();
 	// Í¨¹ý CChessEngine ¼Ì³Ð
 	virtual void Reset() override;
 	virtual void MovePiece(CChessBase::PieceMoveDesc& move) override;

@@ -100,7 +100,6 @@ extern float frmtm;
 //渲染比率
 extern float scale;
 
-//extern int game_mode;
 extern int tip_used_num;
 
 struct Resource
@@ -151,7 +150,6 @@ public:
     void setBounds(float x1, float y1, float x2, float y2);
 };
 //点击区域
-extern Box *boxes[BOX_MAX];
 
 constexpr int UI_TYPE_BUTTON_DYNAMIC = 0;
 constexpr int UI_TYPE_BUTTON_STATIC = 1;
@@ -266,7 +264,6 @@ public:
     constexpr static int EFF_NONE = -1;
 };
 
-extern Effect alleffects[EFFECT_MAX];
 
 
 
@@ -298,7 +295,6 @@ public:
     void rend(float destx, float desty, float destw, float desth, bool direction,float opacity = 1.0f);
     bool getActive();
 };
-//extern Animation anime[ANIME_MAX];
 
 
 class ComponentManager
@@ -592,7 +588,6 @@ struct Read_info
     string match_num_online = "";
 };
 
-//extern Read_info history_buf[5];
 extern Read_info record;
 
 class Letter
