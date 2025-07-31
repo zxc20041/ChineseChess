@@ -63,7 +63,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     static float checkfocustime = 0;
     while (1)
     {
-        if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE /*| PM_QS_PAINT*/))
+        if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
         {
             TranslateMessage(&msg);
             DispatchMessage(&msg);
@@ -81,6 +81,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         {
             checkfocustime += frmtm;
         }
+        Sleep(1);
     }
     DestroyWindow(hWnd);
     return 0;

@@ -71,7 +71,7 @@ void CChessLocalPVP::Reset()
 	return;
 }
 
-void CChessLocalPVP::MovePiece(CChessBase::PieceMoveDesc& move)
+void CChessLocalPVP::MovePiece(CChessBase::PieceMoveDesc move)
 {
 	bool valid = 0;
 	for (auto &i : availablePositions[move.fromx][move.fromy])	//verify
@@ -89,12 +89,26 @@ void CChessLocalPVP::MovePiece(CChessBase::PieceMoveDesc& move)
 	if (!valid)
 	{
 		debugger_main.writelog(DWARNNING, "target pos not found in CChessLocalPVP::MovePiece() " + to_string(move.fromx) + "," + to_string(move.fromy) + "->" + to_string(move.tox) + "," + to_string(move.toy), __LINE__);
+		//todo: sync map to cui
 		return;
 	}
 	map.board[move.tox][move.toy] = map.board[move.fromx][move.fromy];
 	map.piece_side[move.tox][move.toy] = map.piece_side[move.fromx][move.fromy];
+	map.board[move.fromx][move.fromy] = PIECE_NULL;
 
 	current_side_red = !current_side_red;
+
+	//print map
+	debugger_main.writelog(DDEBUG, "map info", __LINE__);
+	for (int i = BOARD_Y_MAX; i >= 0; i--)
+	{
+		string line;
+		for (int j = 0; j <= BOARD_X_MAX; j++)
+		{
+			line += " " + to_string(map.board[j][i]);
+		}
+		debugger_main.writelog(DDEBUG, line);
+	}
 
 	for (int i = 0; i < 9; i++)
 	{
@@ -106,8 +120,12 @@ void CChessLocalPVP::MovePiece(CChessBase::PieceMoveDesc& move)
 	return;
 }
 
-std::vector<CChessBase::PiecePosDesc> CChessLocalPVP::SelectPiece(CChessBase::PiecePosDesc& pos)
+std::vector<CChessBase::PiecePosDesc> CChessLocalPVP::SelectPiece(CChessBase::PiecePosDesc pos)
 {
+	if (map.board[pos.x][pos.y] == PIECE_NULL)
+	{
+		debugger_main.add_tagline("WARNNING: Select NULL PIECE");
+	}
 	return availablePositions[pos.x][pos.y];
 }
 

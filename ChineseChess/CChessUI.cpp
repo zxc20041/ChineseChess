@@ -31,6 +31,7 @@ CChessUI::~CChessUI()
 
 void CChessUI::ClickAt(int x, int y)
 {
+	debugger_main.add_tagline("ClickAt " + to_string(x) + "," + to_string(y)+" piece type= "+to_string(map.board[x][y]));
 	if (piece_selected)
 	{
 		bool valid = 0;
@@ -39,7 +40,9 @@ void CChessUI::ClickAt(int x, int y)
 			if (i.x == x && i.y == y)
 			{
 				valid = 1;
+				engine->MovePiece(PieceMoveDesc{ selected_piece_x, selected_piece_y, x, y });
 				render.MovePiece(PieceMoveDesc{ selected_piece_x, selected_piece_y, x,y }, map.board[x][y] != PIECE_NULL);
+				map = engine->GetMap();
 				debugger_main.add_tagline("MovePiece " + to_string(selected_piece_x) + "," + to_string(selected_piece_y) + " -> " + to_string(x) + "," + to_string(y));
 				break;
 			}
@@ -55,7 +58,10 @@ void CChessUI::ClickAt(int x, int y)
 	{
 		if (map.board[x][y] != PIECE_NULL && map.piece_side[x][y] == engine->GetCurrentSide())
 		{
+			availablePosition = engine->SelectPiece(PiecePosDesc(x, y));
+			render.SetAvailablePosition(availablePosition);
 			render.SelectPiece(x, y);
+			
 			selected_piece_x = x, selected_piece_y = y;
 			piece_selected = 1;
 			debugger_main.add_tagline("SelectPiece " + to_string(selected_piece_x) + "," + to_string(selected_piece_y) + " -> " + to_string(x) + "," + to_string(y));
@@ -67,6 +73,7 @@ void CChessUI::ClickAt(int x, int y)
 
 void CChessUI::Reset()
 {
+	map = engine->GetMap();
 	render.SetSide(engine->GetSide());
 	render.Reset();
 	return;
@@ -79,16 +86,21 @@ bool CChessUI::LoadPiecesAtlasInfo()
 
 void CChessUI::Update()
 {
+
 	for (int i = 0; i < 9; i++)
 	{
 		for (int j = 0; j < 10; j++)
 		{
+			
+			boxes[i][j]->check(1);
 			if (boxes[i][j]->getClicked())
 			{
+				boxes[i][j]->reset_click_status();
 				ClickAt(i, j);
 			}
 		}
 	}
+
 	render.Update();
 	return;
 }
@@ -137,7 +149,7 @@ CChessUI::UIRender::UIRender()
 	{
 		for (int j = 0; j <= BOARD_Y_MAX; j++)
 		{
-			PIECE_UI::piece_rect[i][j] = D2D1::RectF(map_line_x[i] - block_length_x * 0.5f, map_line_y[j] - block_length_y * 0.5f, map_line_x[i] + block_length_x * 0.5f, map_line_y[j] + block_length_y * 0.5f);
+			PIECE_UI::piece_rect[i][j] = D2D1::RectF(map_line_x[i] - block_length_x * 0.5f, map_line_y[BOARD_Y_MAX-j] - block_length_y * 0.5f, map_line_x[i] + block_length_x * 0.5f, map_line_y[BOARD_Y_MAX-j] + block_length_y * 0.5f);
 		}
 		
 	}
@@ -282,7 +294,7 @@ void CChessUI::UIRender::RendMark()
 
 void CChessUI::UIRender::Reset()
 {
-	//0-15(black) at top, 16-31(red) at bottom of board
+	//0-15(red) at bottom of board, 16-31(black) at top
 	for (int i = 0; i < PIECE_NUM_MAX; i++)
 	{
 		if (pieces[i] != nullptr)
@@ -291,39 +303,39 @@ void CChessUI::UIRender::Reset()
 		}
 	}
 
-	pieces[0] = make_unique<PIECE_UI>(BOARD_X_MIN, BOARD_Y_MIN, ChessPieceType::PIECE_ROOK, 0);
-	pieces[1] = make_unique<PIECE_UI>(BOARD_X_MIN + 1, BOARD_Y_MIN, ChessPieceType::PIECE_HORSE, 0);
-	pieces[2] = make_unique<PIECE_UI>(BOARD_X_MIN + 2, BOARD_Y_MIN, ChessPieceType::PIECE_ELEPHANT, 0);
-	pieces[3] = make_unique<PIECE_UI>(BOARD_X_MIN + 3, BOARD_Y_MIN, ChessPieceType::PIECE_MANDARIN, 0);
-	pieces[4] = make_unique<PIECE_UI>(BOARD_X_MIN + 4, BOARD_Y_MIN, ChessPieceType::PIECE_KING, 0);
-	pieces[5] = make_unique<PIECE_UI>(BOARD_X_MAX, BOARD_Y_MIN, ChessPieceType::PIECE_ROOK, 0);
-	pieces[6] = make_unique<PIECE_UI>(BOARD_X_MAX - 1, BOARD_Y_MIN, ChessPieceType::PIECE_HORSE, 0);
-	pieces[7] = make_unique<PIECE_UI>(BOARD_X_MAX - 2, BOARD_Y_MIN, ChessPieceType::PIECE_ELEPHANT, 0);
-	pieces[8] = make_unique<PIECE_UI>(BOARD_X_MAX - 3, BOARD_Y_MIN, ChessPieceType::PIECE_MANDARIN, 0);
-	pieces[9] = make_unique<PIECE_UI>(BOARD_X_MIN + 1, BOARD_Y_MIN+2, ChessPieceType::PIECE_CANNON, 0);
-	pieces[10] = make_unique<PIECE_UI>(BOARD_X_MAX - 1, BOARD_Y_MIN+ 2, ChessPieceType::PIECE_CANNON, 0);
-	pieces[11] = make_unique<PIECE_UI>(BOARD_X_MIN, BOARD_Y_MIN + 3, ChessPieceType::PIECE_PAWN, 0);
-	pieces[12] = make_unique<PIECE_UI>(BOARD_X_MIN + 2, BOARD_Y_MIN + 3, ChessPieceType::PIECE_PAWN, 0);
-	pieces[13] = make_unique<PIECE_UI>(BOARD_X_MIN + 4, BOARD_Y_MIN + 3, ChessPieceType::PIECE_PAWN, 0);
-	pieces[14] = make_unique<PIECE_UI>(BOARD_X_MIN + 6, BOARD_Y_MIN + 3, ChessPieceType::PIECE_PAWN, 0);
-	pieces[15] = make_unique<PIECE_UI>(BOARD_X_MAX, BOARD_Y_MIN + 3, ChessPieceType::PIECE_PAWN, 0);
+	pieces[0] = make_unique<PIECE_UI>(BOARD_X_MIN, BOARD_Y_MIN, ChessPieceType::PIECE_ROOK, 1);
+	pieces[1] = make_unique<PIECE_UI>(BOARD_X_MIN + 1, BOARD_Y_MIN, ChessPieceType::PIECE_HORSE, 1);
+	pieces[2] = make_unique<PIECE_UI>(BOARD_X_MIN + 2, BOARD_Y_MIN, ChessPieceType::PIECE_ELEPHANT, 1);
+	pieces[3] = make_unique<PIECE_UI>(BOARD_X_MIN + 3, BOARD_Y_MIN, ChessPieceType::PIECE_MANDARIN, 1);
+	pieces[4] = make_unique<PIECE_UI>(BOARD_X_MIN + 4, BOARD_Y_MIN, ChessPieceType::PIECE_KING, 1);
+	pieces[5] = make_unique<PIECE_UI>(BOARD_X_MAX, BOARD_Y_MIN, ChessPieceType::PIECE_ROOK, 1);
+	pieces[6] = make_unique<PIECE_UI>(BOARD_X_MAX - 1, BOARD_Y_MIN, ChessPieceType::PIECE_HORSE, 1);
+	pieces[7] = make_unique<PIECE_UI>(BOARD_X_MAX - 2, BOARD_Y_MIN, ChessPieceType::PIECE_ELEPHANT, 1);
+	pieces[8] = make_unique<PIECE_UI>(BOARD_X_MAX - 3, BOARD_Y_MIN, ChessPieceType::PIECE_MANDARIN, 1);
+	pieces[9] = make_unique<PIECE_UI>(BOARD_X_MIN + 1, BOARD_Y_MIN+2, ChessPieceType::PIECE_CANNON, 1);
+	pieces[10] = make_unique<PIECE_UI>(BOARD_X_MAX - 1, BOARD_Y_MIN+ 2, ChessPieceType::PIECE_CANNON, 1);
+	pieces[11] = make_unique<PIECE_UI>(BOARD_X_MIN, BOARD_Y_MIN + 3, ChessPieceType::PIECE_PAWN, 1);
+	pieces[12] = make_unique<PIECE_UI>(BOARD_X_MIN + 2, BOARD_Y_MIN + 3, ChessPieceType::PIECE_PAWN, 1);
+	pieces[13] = make_unique<PIECE_UI>(BOARD_X_MIN + 4, BOARD_Y_MIN + 3, ChessPieceType::PIECE_PAWN, 1);
+	pieces[14] = make_unique<PIECE_UI>(BOARD_X_MIN + 6, BOARD_Y_MIN + 3, ChessPieceType::PIECE_PAWN, 1);
+	pieces[15] = make_unique<PIECE_UI>(BOARD_X_MAX, BOARD_Y_MIN + 3, ChessPieceType::PIECE_PAWN, 1);
 
-	pieces[16] = make_unique<PIECE_UI>(BOARD_X_MIN, BOARD_Y_MAX, ChessPieceType::PIECE_ROOK, 1);
-	pieces[17] = make_unique<PIECE_UI>(BOARD_X_MIN + 1, BOARD_Y_MAX, ChessPieceType::PIECE_HORSE, 1);
-	pieces[18] = make_unique<PIECE_UI>(BOARD_X_MIN + 2, BOARD_Y_MAX, ChessPieceType::PIECE_ELEPHANT, 1);
-	pieces[19] = make_unique<PIECE_UI>(BOARD_X_MIN + 3, BOARD_Y_MAX, ChessPieceType::PIECE_MANDARIN, 1);
-	pieces[20] = make_unique<PIECE_UI>(BOARD_X_MIN + 4, BOARD_Y_MAX, ChessPieceType::PIECE_KING, 1);
-	pieces[21] = make_unique<PIECE_UI>(BOARD_X_MAX, BOARD_Y_MAX, ChessPieceType::PIECE_ROOK, 1);
-	pieces[22] = make_unique<PIECE_UI>(BOARD_X_MAX - 1, BOARD_Y_MAX, ChessPieceType::PIECE_HORSE, 1);
-	pieces[23] = make_unique<PIECE_UI>(BOARD_X_MAX - 2, BOARD_Y_MAX, ChessPieceType::PIECE_ELEPHANT, 1);
-	pieces[24] = make_unique<PIECE_UI>(BOARD_X_MAX - 3, BOARD_Y_MAX, ChessPieceType::PIECE_MANDARIN, 1);
-	pieces[25] = make_unique<PIECE_UI>(BOARD_X_MIN + 1, BOARD_Y_MAX - 2, ChessPieceType::PIECE_CANNON, 1);
-	pieces[26] = make_unique<PIECE_UI>(BOARD_X_MAX - 1, BOARD_Y_MAX - 2, ChessPieceType::PIECE_CANNON, 1);
-	pieces[27] = make_unique<PIECE_UI>(BOARD_X_MIN, BOARD_Y_MAX - 3, ChessPieceType::PIECE_PAWN, 1);
-	pieces[28] = make_unique<PIECE_UI>(BOARD_X_MIN + 2, BOARD_Y_MAX - 3, ChessPieceType::PIECE_PAWN, 1);
-	pieces[29] = make_unique<PIECE_UI>(BOARD_X_MIN + 4, BOARD_Y_MAX - 3, ChessPieceType::PIECE_PAWN, 1);
-	pieces[30] = make_unique<PIECE_UI>(BOARD_X_MIN + 6, BOARD_Y_MAX - 3, ChessPieceType::PIECE_PAWN, 1);
-	pieces[31] = make_unique<PIECE_UI>(BOARD_X_MAX, BOARD_Y_MAX - 3, ChessPieceType::PIECE_PAWN, 1);
+	pieces[16] = make_unique<PIECE_UI>(BOARD_X_MIN, BOARD_Y_MAX, ChessPieceType::PIECE_ROOK, 0);
+	pieces[17] = make_unique<PIECE_UI>(BOARD_X_MIN + 1, BOARD_Y_MAX, ChessPieceType::PIECE_HORSE, 0);
+	pieces[18] = make_unique<PIECE_UI>(BOARD_X_MIN + 2, BOARD_Y_MAX, ChessPieceType::PIECE_ELEPHANT, 0);
+	pieces[19] = make_unique<PIECE_UI>(BOARD_X_MIN + 3, BOARD_Y_MAX, ChessPieceType::PIECE_MANDARIN, 0);
+	pieces[20] = make_unique<PIECE_UI>(BOARD_X_MIN + 4, BOARD_Y_MAX, ChessPieceType::PIECE_KING, 0);
+	pieces[21] = make_unique<PIECE_UI>(BOARD_X_MAX, BOARD_Y_MAX, ChessPieceType::PIECE_ROOK, 0);
+	pieces[22] = make_unique<PIECE_UI>(BOARD_X_MAX - 1, BOARD_Y_MAX, ChessPieceType::PIECE_HORSE, 0);
+	pieces[23] = make_unique<PIECE_UI>(BOARD_X_MAX - 2, BOARD_Y_MAX, ChessPieceType::PIECE_ELEPHANT, 0);
+	pieces[24] = make_unique<PIECE_UI>(BOARD_X_MAX - 3, BOARD_Y_MAX, ChessPieceType::PIECE_MANDARIN, 0);
+	pieces[25] = make_unique<PIECE_UI>(BOARD_X_MIN + 1, BOARD_Y_MAX - 2, ChessPieceType::PIECE_CANNON, 0);
+	pieces[26] = make_unique<PIECE_UI>(BOARD_X_MAX - 1, BOARD_Y_MAX - 2, ChessPieceType::PIECE_CANNON, 0);
+	pieces[27] = make_unique<PIECE_UI>(BOARD_X_MIN, BOARD_Y_MAX - 3, ChessPieceType::PIECE_PAWN, 0);
+	pieces[28] = make_unique<PIECE_UI>(BOARD_X_MIN + 2, BOARD_Y_MAX - 3, ChessPieceType::PIECE_PAWN, 0);
+	pieces[29] = make_unique<PIECE_UI>(BOARD_X_MIN + 4, BOARD_Y_MAX - 3, ChessPieceType::PIECE_PAWN, 0);
+	pieces[30] = make_unique<PIECE_UI>(BOARD_X_MIN + 6, BOARD_Y_MAX - 3, ChessPieceType::PIECE_PAWN, 0);
+	pieces[31] = make_unique<PIECE_UI>(BOARD_X_MAX, BOARD_Y_MAX - 3, ChessPieceType::PIECE_PAWN, 0);
 
 	
 	return;
@@ -402,6 +414,12 @@ void CChessUI::UIRender::SetSide(bool side_red)
 	return;
 }
 
+void CChessUI::UIRender::SetAvailablePosition(std::vector<CChessBase::PiecePosDesc> pos)
+{
+	availablePosition = pos;
+	return;
+}
+
 void CChessUI::UIRender::SelectPiece(int x, int y)
 {
 	for (auto& i :pieces)
@@ -409,6 +427,7 @@ void CChessUI::UIRender::SelectPiece(int x, int y)
 		if (i->MatchPosition(x, y))
 		{
 			i->Select();
+			
 			break;
 		}
 	}
@@ -425,24 +444,34 @@ void CChessUI::UIRender::UnSelectPiece(int x, int y)
 			break;
 		}
 	}
+	availablePosition.clear();
 	return;
 }
 
 void CChessUI::UIRender::MovePiece(PieceMoveDesc move, bool eat)
 {
+	if (eat)
+	{
+		for (auto& i : pieces)
+		{
+			if (i->MatchPosition(move.tox, move.toy))
+			{
+				i->Die();
+			}
+		}
+		//todo: play se & anime
+
+	}
 	for (auto& i : pieces)
 	{
 		if (i->MatchPosition(move.fromx, move.fromy))
 		{
 			i->MoveTo(move);
-			if (eat)
-			{
-				//todo: play se & anime
-
-			}
+			
 			break;
 		}
 	}
+	availablePosition.clear();
 	return;
 }
 
@@ -452,14 +481,15 @@ void CChessUI::UIRender::Eat(int x, int y)
 
 unique_ptr<Box> CChessUI::UIRender::GetBox(int x, int y)
 {
-	return make_unique<Box>(map_line_x[x] - block_length_x * 0.45f, map_line_y[y] - block_length_y * 0.45f, map_line_x[x] + block_length_x * 0.45f, map_line_y[y] + block_length_y * 0.45f);
+	//map_line_y increased from top to bottom, however y increased from bottom to top
+	return make_unique<Box>(map_line_x[x] - block_length_x * 0.45f, map_line_y[BOARD_Y_MAX - y] - block_length_y * 0.45f, map_line_x[x] + block_length_x * 0.45f, map_line_y[BOARD_Y_MAX - y] + block_length_y * 0.45f);
 }
 
 PIECE_UI::PIECE_UI(int x, int y, ChessPieceType type, bool side_red)
 {
 	this->x = x, this->y = y;
 	posx = map_line_x[x];
-	posy = map_line_y[y];
+	posy = map_line_y[BOARD_Y_MAX - y];
 	this->type = type;
 	this->side_red = side_red;
 	status = Piece_Move_Status::PIECE_STATIC;
@@ -639,6 +669,7 @@ void PIECE_UI::update(float timeScale)
 		}
 		break;
 	case CChessBase::PIECE_HANG:
+		debugger_main.add_output_line("piece selected type= " + to_string(type) + " pos= " + to_string(x) + "," + to_string(y));
 		break;
 	case CChessBase::PIECE_DOWN_MOVING:
 		moving_time += frmtm * timeScale;
@@ -655,11 +686,12 @@ void PIECE_UI::update(float timeScale)
 			status = PIECE_DOWN_MOVING;
 		}
 		posx = map_line_x[currentMove.fromx] * (1 - moving_time * 4) + map_line_x[currentMove.tox] * moving_time * 4;
-		posy = map_line_y[currentMove.fromy] * (1 - moving_time * 4) + map_line_y[currentMove.toy] * moving_time * 4;
+		posy = map_line_y[BOARD_Y_MAX-currentMove.fromy] * (1 - moving_time * 4) + map_line_y[BOARD_Y_MAX-currentMove.toy] * moving_time * 4;
 		break;
 	default:
 		break;
 	}
+	return;
 }
 
 void PIECE_UI::Select()
@@ -691,7 +723,17 @@ void PIECE_UI::MoveTo(PieceMoveDesc move)
 	return;
 }
 
+void PIECE_UI::Die()
+{
+	status = Piece_Move_Status::PIECE_DIED;
+	return;
+}
+
 bool PIECE_UI::MatchPosition(int x, int y)
 {
+	if (status == PIECE_DIED)
+	{
+		return 0;
+	}
 	return this->x==x&&this->y==y;
 }

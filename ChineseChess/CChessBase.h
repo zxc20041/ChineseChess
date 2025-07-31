@@ -21,7 +21,7 @@ namespace CChessBase
 		PIECE_DOWN_MOVING,
 		PIECE_MOVING_TO,
 		//PIECE_EAT_MOVING_TO,
-		//PIECE_DIED
+		PIECE_DIED
 	};
 
 	/*               BLACK

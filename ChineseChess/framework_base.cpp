@@ -744,9 +744,9 @@ Box::Box(float x1, float y1, float x2, float y2)
     return;
 }
 
-void Box::check()
+void Box::check(int isButton)
 {
-    debugger_main.add_output_line("box rect= " + to_string(x1) + ", " + to_string(y1) + ", " + to_string(x2) + ", " + to_string(y2));
+    //debugger_main.add_output_line("box rect= " + to_string(x1) + ", " + to_string(y1) + ", " + to_string(x2) + ", " + to_string(y2));
     if (!active)
     {
         return;
@@ -780,15 +780,21 @@ void Box::check()
         if (click_status == 0 && clicking)
         {
             click_status = 1;
-
-            g_am.playEffectSound(1);
+            if (isButton)
+            {
+                g_am.playEffectSound(1);
+            }
+            
         }
         else if (click_status == 1 && !clicking)
         {
             click_status = 0;
             clicked = 1;
 
-            g_am.playEffectSound(2);
+            if (isButton)
+            {
+                g_am.playEffectSound(2);
+            }
 
 
             if (doubleclick_status)
@@ -1072,7 +1078,6 @@ Button::Button(float x1, float y1, float x2, float y2, string text,
     
     pos_move_status = 0;
     
-    //buttons[k].box_index = SetBox(x1, x2, y1, y2);
     box = new Box(x1, y1, x2, y2);
     active = 1;
     return;
@@ -1260,7 +1265,7 @@ void Button::update()
 {
     if (active)
     {
-        box->check();
+        box->check(1);
         ui_update();
         debugger_main.add_output_line("button rect= " + to_string(x1) + ", " + to_string(y1) + ", " + to_string(x2) + ", " + to_string(y2));
     }

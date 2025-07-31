@@ -136,6 +136,8 @@ vector<PiecePosDesc> CChessEngine::GetAvailableSteps(PiecePosDesc pos)
 	bool this_side = map.piece_side[pos.x][pos.y];
 	bool cannon_jump_piece = 0;
 	vector<PiecePosDesc> result;
+
+	//fixme: ObeyRule_KingMeetKing always return 1
 	if (this_side != current_side_red || !ObeyRule_KingMeetKing(pos.x, pos.y))
 	{
 		return vector<PiecePosDesc>();
@@ -244,7 +246,7 @@ vector<PiecePosDesc> CChessEngine::GetAvailableSteps(PiecePosDesc pos)
 				}
 				break;
 			}
-			result.emplace_back(i, pos.y);
+			result.emplace_back(pos.x, i);
 		}
 		for (int i = pos.y - 1; i >= 0; i--)
 		{
@@ -256,7 +258,7 @@ vector<PiecePosDesc> CChessEngine::GetAvailableSteps(PiecePosDesc pos)
 				}
 				break;
 			}
-			result.emplace_back(i, pos.y);
+			result.emplace_back(pos.x, i);
 		}
 		break;
 	case CChessBase::PIECE_HORSE:
@@ -324,7 +326,7 @@ vector<PiecePosDesc> CChessEngine::GetAvailableSteps(PiecePosDesc pos)
 		}
 		break;
 	case CChessBase::PIECE_CANNON:
-		
+		cannon_jump_piece = 0;
 		for (int i = pos.x - 1; i >= 0; i--)
 		{
 			if (map.board[i][pos.y] != PIECE_NULL)
@@ -416,6 +418,7 @@ vector<PiecePosDesc> CChessEngine::GetAvailableSteps(PiecePosDesc pos)
 		}
 		break;
 	case CChessBase::PIECE_KING:
+		//fixme: ObeyRule_KingMeetKing_for_king always return 1
 		if (NotMySide(pos.x + 1, pos.y, this_side)&&ObeyRule_KingMeetKing_for_king(pos.x + 1, pos.y))
 		{
 			result.emplace_back(pos.x  + 1, pos.y);

@@ -11,8 +11,8 @@ public:
 	virtual void Reset() = 0;
 	
 	
-	virtual void MovePiece(CChessBase::PieceMoveDesc& move) = 0;
-	virtual std::vector<CChessBase::PiecePosDesc> SelectPiece(CChessBase::PiecePosDesc& pos) = 0;
+	virtual void MovePiece(CChessBase::PieceMoveDesc move) = 0;
+	virtual std::vector<CChessBase::PiecePosDesc> SelectPiece(CChessBase::PiecePosDesc pos) = 0;
 
 	virtual void SetSide(bool side_red) = 0;
 	virtual bool GetSide();

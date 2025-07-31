@@ -104,6 +104,7 @@ bool LocalGame_Page::ExitPage()
 void LocalGame_Page::OnLoad()
 {
 	chessEngine = make_shared<CChessLocalPVP>();
+	chessEngine->Reset();
 	//resolve atlas data
 	if (!CUI.LoadPiecesAtlasInfo())
 	{
