@@ -62,6 +62,11 @@ bool CChessEngine::PositionInMandarinArea(int x, int y, bool my_side)
 
 bool CChessEngine::ObeyRule_KingMeetKing(int x, int y)
 {
+	if (map.board[x][y] == PIECE_KING)
+	{
+		return 1;
+	}
+
 	if (!PositionInBoard(x, y)|| map.board[x][y] == PIECE_NULL)
 	{
 		return 0;
@@ -71,20 +76,22 @@ bool CChessEngine::ObeyRule_KingMeetKing(int x, int y)
 	bool start = 0, piece_between_kings = 0;
 	for (int i = 0; i < 10; i++)
 	{
-		if (map.board[x][i] != PIECE_NULL)
+		if (map.board[x][i] == PIECE_NULL)
 		{
-			if (start)
+			continue;
+		}
+		if (map.board[x][i] == PIECE_KING)
+		{
+			king_num++;
+			start = !start;
+			continue;
+		}
+		if (start)
+		{
+			piece_between_num++;
+			if (y == i)
 			{
-				piece_between_num++;
-				if (y == i)
-				{
-					piece_between_kings = 1;
-				}
-			}
-			if (map.board[x][i] == PIECE_KING)
-			{
-				king_num++;
-				start = !start;
+				piece_between_kings = 1;
 			}
 		}
 	}
@@ -97,28 +104,31 @@ bool CChessEngine::ObeyRule_KingMeetKing(int x, int y)
 
 bool CChessEngine::ObeyRule_KingMeetKing_for_king(int target_x, int target_y)
 {
-	int king_num = 0;
-	bool start = 0, piece_between = 0;
-	for (int i = 0; i < 10; i++)
-	{
-		if (map.board[target_x][i] != PIECE_NULL)
-		{
-			if (start)
-			{
-				piece_between = 1;
-			}
-			if (map.board[target_x][i] == PIECE_KING || i == target_y)
-			{
-				king_num++;
-				start = !start;
-			}
-		}
-	}
-	if (king_num == 2 && !piece_between)
+	if (!PositionInBoard(target_x, target_y)||target_x < 3 || target_x>5 || target_y > 2 && target_y < 7)
 	{
 		return 0;
 	}
-	return 1;
+	int king_num = 0, king_limit = -1;
+	bool start = 0;
+	for (int i = 0; i < 10; i++)
+	{
+		if ((map.board[target_x][i] == PIECE_KING || i == target_y) && king_limit != i)
+		{
+			king_num++;
+			start = !start;
+			king_limit = i + 1;	//避免重复考虑同一PIECE_KING
+			continue;
+		}
+		if (map.board[target_x][i] == PIECE_NULL)
+		{
+			continue;
+		}
+		if (start)	//存在PIECE_KING之间的其它棋子
+		{
+			return 1;
+		}
+	}
+	return king_num != 2;
 }
 
 
@@ -138,10 +148,13 @@ vector<PiecePosDesc> CChessEngine::GetAvailableSteps(PiecePosDesc pos)
 	vector<PiecePosDesc> result;
 
 	//fixme: ObeyRule_KingMeetKing always return 1
-	if (this_side != current_side_red || !ObeyRule_KingMeetKing(pos.x, pos.y))
+	if (this_side != current_side_red )
 	{
 		return vector<PiecePosDesc>();
 	}
+
+	bool restrict_Y_move = !ObeyRule_KingMeetKing(pos.x, pos.y);
+
 	switch (GetPieceType(pos))
 	{
 	case CChessBase::PIECE_NULL:
@@ -171,16 +184,16 @@ vector<PiecePosDesc> CChessEngine::GetAvailableSteps(PiecePosDesc pos)
 					result.emplace_back(pos.x, pos.y + 1);
 				}
 			}
-			if (pos.x > 0)
+			if (pos.x > 0 && !restrict_Y_move)
 			{
-				if (NotMySide(pos.x-1, pos.y , this_side))
+				if (NotMySide(pos.x - 1, pos.y, this_side))
 				{
 					result.emplace_back(pos.x - 1, pos.y);
 				}
 			}
-			if (pos.x < 8)
+			if (pos.x < 8 && !restrict_Y_move)
 			{
-				if (NotMySide(pos.x+1, pos.y, this_side))
+				if (NotMySide(pos.x + 1, pos.y, this_side))
 				{
 					result.emplace_back(pos.x + 1, pos.y);
 				}
@@ -195,14 +208,14 @@ vector<PiecePosDesc> CChessEngine::GetAvailableSteps(PiecePosDesc pos)
 					result.emplace_back(pos.x, pos.y - 1);
 				}
 			}
-			if (pos.x > 0)
+			if (pos.x > 0 && !restrict_Y_move)
 			{
 				if (NotMySide(pos.x - 1, pos.y, this_side))
 				{
 					result.emplace_back(pos.x - 1, pos.y);
 				}
 			}
-			if (pos.x < 8)
+			if (pos.x < 8 && !restrict_Y_move)
 			{
 				if (NotMySide(pos.x + 1, pos.y, this_side))
 				{
@@ -212,30 +225,6 @@ vector<PiecePosDesc> CChessEngine::GetAvailableSteps(PiecePosDesc pos)
 		}
 		break;
 	case CChessBase::PIECE_ROOK:
-		for (int i = pos.x - 1; i >= 0; i--)
-		{
-			if (map.board[i][pos.y] != PIECE_NULL)
-			{
-				if (NotMySide(i, pos.y, this_side))
-				{
-					result.emplace_back(i, pos.y);
-				}
-				break;
-			}
-			result.emplace_back(i, pos.y);
-		}
-		for (int i = pos.x + 1; i < 9; i++)
-		{
-			if (map.board[i][pos.y] != PIECE_NULL)
-			{
-				if (NotMySide(i, pos.y, this_side))
-				{
-					result.emplace_back(i, pos.y);
-				}
-				break;
-			}
-			result.emplace_back(i, pos.y);
-		}
 		for (int i = pos.y + 1; i < 10; i++)
 		{
 			if (map.board[pos.x][i] != PIECE_NULL)
@@ -260,8 +249,41 @@ vector<PiecePosDesc> CChessEngine::GetAvailableSteps(PiecePosDesc pos)
 			}
 			result.emplace_back(pos.x, i);
 		}
+		if (restrict_Y_move)
+		{
+			break;
+		}
+		for (int i = pos.x - 1; i >= 0; i--)
+		{
+			if (map.board[i][pos.y] != PIECE_NULL)
+			{
+				if (NotMySide(i, pos.y, this_side))
+				{
+					result.emplace_back(i, pos.y);
+				}
+				break;
+			}
+			result.emplace_back(i, pos.y);
+		}
+		for (int i = pos.x + 1; i < 9; i++)
+		{
+			if (map.board[i][pos.y] != PIECE_NULL)
+			{
+				if (NotMySide(i, pos.y, this_side))
+				{
+					result.emplace_back(i, pos.y);
+				}
+				break;
+			}
+			result.emplace_back(i, pos.y);
+		}
+		
 		break;
 	case CChessBase::PIECE_HORSE:
+		if (restrict_Y_move)
+		{
+			break;
+		}
 		if (PositionPieceNull(pos.x - 1, pos.y))
 		{
 			if (NotMySide(pos.x - 2, pos.y + 1, this_side))
@@ -308,6 +330,10 @@ vector<PiecePosDesc> CChessEngine::GetAvailableSteps(PiecePosDesc pos)
 		}
 		break;
 	case CChessBase::PIECE_ELEPHANT:
+		if (restrict_Y_move)
+		{
+			break;
+		}
 		if (PositionPieceNull(pos.x - 1, pos.y - 1) && NotMySide(pos.x - 2, pos.y - 2, this_side))
 		{
 			result.emplace_back(pos.x - 2, pos.y - 2);
@@ -327,42 +353,6 @@ vector<PiecePosDesc> CChessEngine::GetAvailableSteps(PiecePosDesc pos)
 		break;
 	case CChessBase::PIECE_CANNON:
 		cannon_jump_piece = 0;
-		for (int i = pos.x - 1; i >= 0; i--)
-		{
-			if (map.board[i][pos.y] != PIECE_NULL)
-			{
-				if (!cannon_jump_piece)
-				{
-					cannon_jump_piece = 1;
-					continue;
-				}
-				result.emplace_back(i, pos.y);
-				break;
-			}
-			else if (!cannon_jump_piece)
-			{
-				result.emplace_back(i, pos.y);
-			}
-		}
-		cannon_jump_piece = 0;
-		for (int i = pos.x + 1; i < 9; i++)
-		{
-			if (map.board[i][pos.y] != PIECE_NULL)
-			{
-				if (!cannon_jump_piece)
-				{
-					cannon_jump_piece = 1;
-					continue;
-				}
-				result.emplace_back(i, pos.y);
-				break;
-			}
-			else if (!cannon_jump_piece)
-			{
-				result.emplace_back(i, pos.y);
-			}
-		}
-		cannon_jump_piece = 0;
 		for (int i = pos.y + 1; i < 10; i++)
 		{
 			if (map.board[pos.x][i] != PIECE_NULL)
@@ -372,7 +362,11 @@ vector<PiecePosDesc> CChessEngine::GetAvailableSteps(PiecePosDesc pos)
 					cannon_jump_piece = 1;
 					continue;
 				}
-				result.emplace_back(pos.x, i);
+				if (NotMySide(pos.x, i, this_side))
+				{
+					result.emplace_back(pos.x, i);
+				}
+				
 				break;
 			}
 			else if (!cannon_jump_piece)
@@ -390,7 +384,11 @@ vector<PiecePosDesc> CChessEngine::GetAvailableSteps(PiecePosDesc pos)
 					cannon_jump_piece = 1;
 					continue;
 				}
-				result.emplace_back(pos.x, i);
+				if (NotMySide(pos.x, i, this_side))
+				{
+					result.emplace_back(pos.x, i);
+				}
+				
 				break;
 			}
 			else if (!cannon_jump_piece)
@@ -398,8 +396,61 @@ vector<PiecePosDesc> CChessEngine::GetAvailableSteps(PiecePosDesc pos)
 				result.emplace_back(pos.x, i);
 			}
 		}
+		if (restrict_Y_move)
+		{
+			break;
+		}
+		cannon_jump_piece = 0;
+		for (int i = pos.x - 1; i >= 0; i--)
+		{
+			if (map.board[i][pos.y] != PIECE_NULL)
+			{
+				if (!cannon_jump_piece)
+				{
+					cannon_jump_piece = 1;
+					continue;
+				}
+				if (NotMySide(i, pos.y, this_side))
+				{
+					result.emplace_back(i, pos.y);
+				}
+				
+				break;
+			}
+			else if (!cannon_jump_piece)
+			{
+				result.emplace_back(i, pos.y);
+			}
+		}
+		cannon_jump_piece = 0;
+		for (int i = pos.x + 1; i < 9; i++)
+		{
+			if (map.board[i][pos.y] != PIECE_NULL)
+			{
+				if (!cannon_jump_piece)
+				{
+					cannon_jump_piece = 1;
+					continue;
+				}
+				if (NotMySide(i, pos.y, this_side))
+				{
+					result.emplace_back(i, pos.y);
+				}
+				
+				break;
+			}
+			else if (!cannon_jump_piece)
+			{
+				result.emplace_back(i, pos.y);
+			}
+		}
+		
 		break;
 	case CChessBase::PIECE_MANDARIN:
+		if (restrict_Y_move)
+		{
+			break;
+		}
 		if (PositionInMandarinArea(pos.x + 1, pos.y + 1, this_side) && NotMySide(pos.x + 1, pos.y + 1, this_side))
 		{
 			result.emplace_back(pos.x + 1, pos.y + 1);
@@ -419,9 +470,9 @@ vector<PiecePosDesc> CChessEngine::GetAvailableSteps(PiecePosDesc pos)
 		break;
 	case CChessBase::PIECE_KING:
 		//fixme: ObeyRule_KingMeetKing_for_king always return 1
-		if (NotMySide(pos.x + 1, pos.y, this_side)&&ObeyRule_KingMeetKing_for_king(pos.x + 1, pos.y))
+		if (NotMySide(pos.x + 1, pos.y, this_side) && ObeyRule_KingMeetKing_for_king(pos.x + 1, pos.y))
 		{
-			result.emplace_back(pos.x  + 1, pos.y);
+			result.emplace_back(pos.x + 1, pos.y);
 		}
 		if (NotMySide(pos.x - 1, pos.y, this_side) && ObeyRule_KingMeetKing_for_king(pos.x - 1, pos.y))
 		{

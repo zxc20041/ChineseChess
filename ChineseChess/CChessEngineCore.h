@@ -36,7 +36,11 @@ private:
 	bool PositionInBoard(int x, int y);
 	bool PositionPieceNull(int x, int y);
 	bool PositionInMandarinArea(int x, int y, bool my_side);
+
+	//合法时返回真
 	bool ObeyRule_KingMeetKing(int x, int y);
+
+	//合法时返回真
 	bool ObeyRule_KingMeetKing_for_king(int target_x, int target_y);
 	
 
