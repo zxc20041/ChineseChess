@@ -68,6 +68,8 @@ void CChessLocalPVP::Reset()
 			availablePositions[i][j] = GetAvailableSteps(PiecePosDesc(i, j));
 		}
 	}
+
+	engineAdapter.Reset();
 	return;
 }
 

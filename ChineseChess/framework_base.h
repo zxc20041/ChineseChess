@@ -1,4 +1,5 @@
 #pragma once 
+#define WIN32_LEAN_AND_MEAN
 #include <string>
 #include <cmath>
 #include <cstring>
@@ -54,7 +55,7 @@ constexpr int PAGE_INTRO = 1000;
 
 #define SAFE_RELEASE(P) if(P){P->Release() ; P = NULL ;}    //安全释放对象
 #define cleanStrBuff(STR) CleanStrBuff(STR,sizeof(STR)/sizeof(STR[0]))
-#define ReadFile(filename,buf) ReadFile_1(filename,buf,sizeof(buf)/sizeof(buf[0]))
+
 #define KEY_DOWN(VK_NONAME) ((GetAsyncKeyState(VK_NONAME) & 0x8000) ? 1:0)  //用来检测按键的点击事件
 typedef std::chrono::high_resolution_clock Clock;
 using namespace std;

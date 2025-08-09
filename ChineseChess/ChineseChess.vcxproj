@@ -73,14 +73,14 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <RunCodeAnalysis>false</RunCodeAnalysis>
     <EnableClangTidyCodeAnalysis>false</EnableClangTidyCodeAnalysis>
-    <ExternalIncludePath>..\Dependencies;..\Dependencies\openssl;..\Dependencies\libogg-1.3.5\include;..\Dependencies\libvorbis-1.3.7\include;..\Dependencies\openal\include;$(ExternalIncludePath)</ExternalIncludePath>
-    <LibraryPath>..\Dependencies;..\Dependencies\openal\libs\Win64;..\Dependencies\libogg-1.3.5\win32\VS2015\x64\Release;..\Dependencies\libvorbis-1.3.7\win32\VS2010\x64\Release;$(LibraryPath)</LibraryPath>
+    <ExternalIncludePath>..\Dependencies\boost_1_72_0;..\Dependencies;..\Dependencies\openssl;..\Dependencies\libogg-1.3.5\include;..\Dependencies\libvorbis-1.3.7\include;..\Dependencies\openal\include;$(ExternalIncludePath)</ExternalIncludePath>
+    <LibraryPath>..\Dependencies\boost_1_72_0\lib64-msvc-14.2;..\Dependencies\boost_1_88_0;..\Dependencies;..\Dependencies\openal\libs\Win64;..\Dependencies\libogg-1.3.5\win32\VS2015\x64\Release;..\Dependencies\libvorbis-1.3.7\win32\VS2010\x64\Release;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <RunCodeAnalysis>false</RunCodeAnalysis>
     <EnableClangTidyCodeAnalysis>false</EnableClangTidyCodeAnalysis>
-    <ExternalIncludePath>..\Dependencies;..\Dependencies\openssl;..\Dependencies\libogg-1.3.5\include;..\Dependencies\libvorbis-1.3.7\include;..\Dependencies\openal\include;$(ExternalIncludePath)</ExternalIncludePath>
-    <LibraryPath>..\Dependencies;..\Dependencies\openal\libs\Win64;..\Dependencies\libogg-1.3.5\win32\VS2015\x64\Release;..\Dependencies\libvorbis-1.3.7\win32\VS2010\x64\Release;$(LibraryPath)</LibraryPath>
+    <ExternalIncludePath>..\Dependencies\boost_1_72_0;..\Dependencies;..\Dependencies\openssl;..\Dependencies\libogg-1.3.5\include;..\Dependencies\libvorbis-1.3.7\include;..\Dependencies\openal\include;$(ExternalIncludePath)</ExternalIncludePath>
+    <LibraryPath>..\Dependencies\boost_1_72_0\lib64-msvc-14.2;..\Dependencies;..\Dependencies\openal\libs\Win64;..\Dependencies\libogg-1.3.5\win32\VS2015\x64\Release;..\Dependencies\libvorbis-1.3.7\win32\VS2010\x64\Release;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -117,11 +117,13 @@
       <LanguageStandard>stdcpp17</LanguageStandard>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
       <StringPooling>true</StringPooling>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <UseDynamicDebugging>true</UseDynamicDebugging>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <Manifest>
       <EnableDpiAwareness>true</EnableDpiAwareness>

@@ -3,6 +3,7 @@
 #include"framework_base.h"
 #include"thread_communicate.h"
 #include"audio_thread.h"
+#define ReadFile(filename,buf) ReadFile_1(filename,buf,sizeof(buf)/sizeof(buf[0]))
 using namespace std;
 
 setting_general_desc set1[2];

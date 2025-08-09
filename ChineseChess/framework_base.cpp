@@ -4686,7 +4686,7 @@ void init_once()
         }
     }
     debugger_main.writelog(DDEBUG, "after AddFontResourceA", __LINE__);
-    SendMessage(HWND_BROADCAST, WM_FONTCHANGE, 0, 0);
+    PostMessage(HWND_BROADCAST, WM_FONTCHANGE, 0, 0);
     debugger_main.writelog(DDEBUG, "before CreateD2DResource()", __LINE__);
     CreateD2DResource();
     

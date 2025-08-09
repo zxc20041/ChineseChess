@@ -5,7 +5,7 @@
 #include "settings.h"
 
 #include "thread_communicate.h"
-
+#define ReadFile(filename,buf) ReadFile_1(filename,buf,sizeof(buf)/sizeof(buf[0]))
 using namespace std;
 
 extern debug_ex debugger_audio;

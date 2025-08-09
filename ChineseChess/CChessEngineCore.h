@@ -1,5 +1,6 @@
 #pragma once
 #include"CChessBase.h"
+#include"CChessEngineAdapter.h"
 #include<vector>
 
 class CChessEngine
@@ -29,7 +30,7 @@ protected:
 
 	bool side_red, current_side_red;
 	//todo: add engine adapter member
-
+	CChessEngineAdapter engineAdapter;
 private:
 	bool NotMySide(int x, int y, bool my_side);
 	CChessBase::ChessPieceType GetPieceType(CChessBase::PiecePosDesc& pos);
