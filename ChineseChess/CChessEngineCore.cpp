@@ -1,7 +1,8 @@
 #include"CChessEngineCore.h"
-
+#include"framework_base.h"
 using namespace CChessBase;
 using namespace std;
+using namespace debugger;
 
 CChessEngine::CChessEngine()
 {
@@ -11,6 +12,7 @@ CChessEngine::CChessEngine()
 
 CChessEngine::~CChessEngine()
 {
+	debugger_main.writelog(DDEBUG, "in ~CChessEngine()", __LINE__);
 }
 
 bool CChessEngine::NotMySide(int x, int y, bool my_side)

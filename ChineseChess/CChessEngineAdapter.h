@@ -1,10 +1,9 @@
 #pragma once
-
-
 #include"CChessBase.h"
 
 #include <string>
-
+//#include <boost/asio.hpp>
+#include <boost/process.hpp>
 
 
 class CChessEngineAdapter
@@ -59,11 +58,16 @@ private:
 
 
 	//ba::streambuf out_buf, err_buf;
-	
+	boost::asio::io_context io_ctx;
+	boost::process::child proc;
+	// 创建管道
+	boost::process::opstream in;      // 输入到子进程
+	boost::process::ipstream out;     // 子进程的输出
 	
 	//boost::asio::posix::stream_descriptor in(ba::io_context);
 
-	std::string line;
-	void read_output();
+	//std::string line;
+	void read_output(std::string line);
+	
 	void write_input(std::string cmd);
 };

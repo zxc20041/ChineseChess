@@ -1,12 +1,11 @@
-//#include"framework_base.h"
-#define WIN32_LEAN_AND_MEAN
+#include"framework_base.h"
 #include"CChessEngineAdapter.h"
-#include <boost/process.hpp>
-
+#include <boost/asio.hpp>
 
 using namespace CChessBase;
-//using namespace debugger;
+using namespace debugger;
 using namespace std;
+using namespace std::chrono_literals;
 namespace bp = boost::process;
 namespace ba = boost::asio;
 
@@ -20,12 +19,12 @@ CChessEngineAdapter::CChessEngineAdapter()
     //todo: get exeFileNames from text
 
     exeFileNames[0] = "./game/pikafish230305/pikafish-avx2.exe";
-    argument = "pikafish-avx2.exe";
+    argument = "";
 }
 
 CChessEngineAdapter::~CChessEngineAdapter()
 {
-    if (0)
+    if (proc.running())
     {
         //write quit
         write_input("quit");
@@ -35,7 +34,7 @@ CChessEngineAdapter::~CChessEngineAdapter()
 void CChessEngineAdapter::Reset()
 {
     //stop process if started
-    if (0)
+    if (proc.running())
     {
         //write quit
         write_input("quit");
@@ -43,14 +42,37 @@ void CChessEngineAdapter::Reset()
     
 
     //start process
+    proc = bp::child(
+        exeFileNames[0],
+        bp::args({ argument }),
+        bp::std_in < in,
+        bp::std_out > out,
+        io_ctx
+    );
     //proc.reset(new bp::popen(io_ctx, exeFileNames[0], { argument }));
-    if (0)
+    if (!proc.running())
     {
-        //debugger_main.writelog(DWARNNING, "failed to start process " + exeFileNames[0], __LINE__);
+        debugger_main.writelog(DWARNNING, "failed to start process " + exeFileNames[0], __LINE__);
         return;
     }
+
+    // 创建线程处理异步I/O
+    std::thread out_thread([&] 
+    {
+        std::string line;
+        while (proc.running()) 
+        {
+            std::getline(out, line);
+            read_output(line);
+            Sleep(1);
+        }
+        status = ENGINE_STATUS::E_FAILED;
+        debugger_main.writelog(DDEBUG, "out_thread stopped running", __LINE__);
+        return;
+    });
+    out_thread.detach();
     status = ENGINE_STATUS::E_READY;
-    read_output();
+    
     return;
 }
 
@@ -85,60 +107,52 @@ CChessBase::PieceMoveDesc CChessEngineAdapter::GetBestMove()
     return CChessBase::PieceMoveDesc();
 }
 
-void CChessEngineAdapter::read_output()
+void CChessEngineAdapter::read_output(string line)
 {
-    if (0)
-    {
-        status = ENGINE_STATUS::E_FAILED;
-        //debugger_main.writelog(DWARNNING, "failed to start process " + exeFileNames[0], __LINE__);
-        return;
-    }
-    //ba::async_read_until(proc, ba::dynamic_buffer(line), '\n',
-    //    [&](boost::system::error_code ec, std::size_t n)
-    //    {
-    //        if (!ec)
-    //        {
-    //            debugger_main.writelog(DDEBUG, "read: " + line, __LINE__);
-    //            read_output(); // 继续读取下一行
-    //        }
-    //        else
-    //        {
-    //            debugger_main.writelog(DWARNNING, "read failed: " + line, __LINE__);
-    //        }
-    //    });
+    
+    debugger_main.writelog(DDEBUG, "read_output from proc: " + line, __LINE__);
     return;
 }
 
+
 void CChessEngineAdapter::write_input(string cmd)
 {
-    if (0)
+    if (!proc.running())
     {
-        //debugger_main.writelog(DWARNNING, "failed to write_input while process not ready " + cmd, __LINE__);
+        debugger_main.writelog(DWARNNING, "failed to write_input while process not running " + cmd, __LINE__);
         status = ENGINE_STATUS::E_FAILED;
         return;
     }
-    cmd += '\n';
-    /*ba::async_write(proc, ba::dynamic_buffer(cmd), [&](boost::system::error_code ec, std::size_t n)
+    //cmd += '\n';
+    in << cmd << std::endl;
+    if (cmd == "quit")
+    {
+        
+        proc.wait_for(500ms);
+        if (proc.running())
         {
-            if (!ec)
-            {
-                debugger_main.writelog(DDEBUG, "write: " + line, __LINE__);
-                if (cmd == "quit\n")
-                {
-                    Sleep(1000);
-                    if (proc && proc->is_open())
-                    {
-                        proc->request_exit();
-                        Sleep(100);
-                        proc->terminate();
-                    }
-                }
-            }
-            else
-            {
-                debugger_main.writelog(DWARNNING, "write failed: " + line, __LINE__);
-            }
+            proc.terminate();
         }
-    );*/
+    }
+    //ba::async_write(in, ba::dynamic_buffer(cmd), [&](boost::system::error_code ec, std::size_t n)
+    //    {
+    //        if (!ec)
+    //        {
+    //            //debugger_main.writelog(DDEBUG, "write: " + line, __LINE__);
+    //            if (cmd == "quit\n")
+    //            {
+    //                Sleep(500);
+    //                if (proc.running())
+    //                {
+    //                    proc.terminate();
+    //                }
+    //            }
+    //        }
+    //        else
+    //        {
+    //            //debugger_main.writelog(DWARNNING, "write failed: " + line, __LINE__);
+    //        }
+    //    }
+    //);
     return;
 }

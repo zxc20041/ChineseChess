@@ -97,6 +97,7 @@ bool LocalGame_Page::EnterPage()
 
 bool LocalGame_Page::ExitPage()
 {
+	chessEngine = nullptr;
 	g_rm.ReleaseAll();
 	return 1;
 }
