@@ -41,12 +41,14 @@ private:
 	//std::string Move2FenString(CChessBase::PieceMoveDesc move);
 
 	//std::string currentPosInFen;
-
+	std::string engineID;
 	std::string currentPosInMove;
+
+	CChessBase::PieceMoveDesc bestMove;
 
 	ENGINE_STATUS status;
 
-	bool enable_LimitStrength;
+	bool enable_LimitStrength, bestMoveRecv, noBestMove, mate;
 
 	int elo;
 
