@@ -10,7 +10,7 @@ public:
 	virtual ~CChessEngine();
 
 	virtual void Reset() = 0;
-	
+	virtual void Update() = 0;
 	
 	virtual void MovePiece(CChessBase::PieceMoveDesc move) = 0;
 	virtual std::vector<CChessBase::PiecePosDesc> SelectPiece(CChessBase::PiecePosDesc pos) = 0;

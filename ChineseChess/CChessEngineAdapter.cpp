@@ -13,10 +13,10 @@ namespace ba = boost::asio;
 
 CChessEngineAdapter::CChessEngineAdapter()
 {
-    elo = 1500, enable_LimitStrength = 1, hash_size = 64;
+    elo = 0, enable_LimitStrength = 1, hash_size = 64;
     status = ENGINE_STATUS::E_INIT;
     stepTime = 0, targetStepTime = 5;
-    bestMoveRecv = 0, noBestMove = 0, mate = 0;
+    bestMoveRecv = 0, noBestMove = 0, mate = 0, uciOK = 0, mateRecv = 0;
     thread_num = 4;
     currentPosInMove = "position startpos moves";
     //todo: get exeFileNames from text
@@ -80,13 +80,18 @@ void CChessEngineAdapter::Reset()
 
     //set option and enter uci
     write_input("uci");
-
+#ifdef _DEBUG
     write_input("setoption name Debug Log File value PikaFishLog.txt");
-    write_input("setoption name UCI_LimitStrength value true");
-    write_input("setoption name UCI_Elo value " + to_string(elo));
+#endif // DEBUG 
+
     write_input("setoption name Threads value " + to_string(thread_num));
     write_input("setoption name Hash value " + to_string(hash_size));
 
+    if (elo > 0)
+    {
+        write_input("setoption name UCI_LimitStrength value true");
+        write_input("setoption name UCI_Elo value " + to_string(elo));
+    }
     return;
 }
 
@@ -104,6 +109,7 @@ void CChessEngineAdapter::SetElo(int elo)
         return;
     }
     this->elo = elo;
+    
     return;
 }
 
@@ -116,24 +122,54 @@ void CChessEngineAdapter::MovePiece(CChessBase::PieceMoveDesc move)
         debugger_main.writelog(DWARNNING, "param move illegal in CChessEngineAdapter::MovePiece() " + to_string(move.fromx) + " " + to_string(move.fromy) + " -> " + to_string(move.tox) + " " + to_string(move.toy), __LINE__);
     }
 
+    //重置变量
+    bestMoveRecv = 0, noBestMove = 0, mate = 0, mateRecv = 0;
+    stepTime = 0;
+    bestMove = { -1,-1,-1,-1 };
+
+
     currentPosInMove += " ";
-    currentPosInMove += (char)move.fromx - '0' + 'a';
+    currentPosInMove += (char)move.fromx + 'a';
     currentPosInMove += to_string(move.fromy);
-    currentPosInMove += (char)move.tox - '0' + 'a';
+    currentPosInMove += (char)move.tox + 'a';
     currentPosInMove += to_string(move.toy);
 
     //send cmd
     write_input(currentPosInMove);
+    write_input("go depth 1");  //check if mate
     return;
 }
 
-bool CChessEngineAdapter::GetWin()
+bool CChessEngineAdapter::GetWin(bool& result)
 {
-    return false;
+    if (!mateRecv)
+    {
+        return 0;
+    }
+    result= noBestMove && mate;
+    return 1;
+}
+
+bool CChessEngineAdapter::CheckBestMove()
+{
+    return bestMoveRecv;
 }
 
 CChessBase::PieceMoveDesc CChessEngineAdapter::GetBestMove()
 {
+    if (!bestMoveRecv)
+    {
+        debugger_main.writelog(DWARNNING, "illegal bestMoveRecv status in CChessEngineAdapter::GetBestMove()", __LINE__);
+    }
+    bestMoveRecv = 0;
+
+    //校验返回值
+    if (bestMove.fromx<BOARD_X_MIN || bestMove.fromx>BOARD_X_MAX || bestMove.tox<BOARD_X_MIN || bestMove.tox>BOARD_X_MAX
+        || bestMove.fromy< BOARD_Y_MIN || bestMove.fromy>BOARD_Y_MAX || bestMove.toy<BOARD_Y_MIN || bestMove.toy>BOARD_Y_MAX)
+    {
+        debugger_main.writelog(DWARNNING, "param move illegal in CChessEngineAdapter::GetBestMove() " + to_string(bestMove.fromx) + to_string(bestMove.fromy) + to_string(bestMove.tox) + to_string(bestMove.toy), __LINE__);
+        return PieceMoveDesc();
+    }
     return bestMove;
 }
 
@@ -144,13 +180,18 @@ void CChessEngineAdapter::read_output(string line)
     size_t find_pos;
     if (line.find("uciok") != string::npos)
     {
-        //ok
-
+        uciOK = 1;
+        debugger_main.writelog(DINFO, "Connected to chess engine: " + engineID, __LINE__);
     }
     else if (line.find("id name") != string::npos)
     {
         find_pos = line.find("id name");
         engineID = line.substr(find_pos + sizeof("id name"));
+    }
+    else if (line.find("bestmove (none)") != string::npos)
+    {
+        noBestMove = 1;
+        mateRecv = 1;   //end of cmd "go depth 1"
     }
     else if (line.find("bestmove") != string::npos)
     {
@@ -159,11 +200,8 @@ void CChessEngineAdapter::read_output(string line)
         bestMove.fromy = line[find_pos + sizeof("bestmove") + 1] - '0';
         bestMove.tox = line[find_pos + sizeof("bestmove") + 2] - 'a';
         bestMove.toy = line[find_pos + sizeof("bestmove") + 3] - '0';
-        bestMoveRecv = 1;
-    }
-    else if (line.find("bestmove (none)") != string::npos)
-    {
-        noBestMove = 1;
+        debugger_main.writelog(DDEBUG, "get bestmove: " + to_string(bestMove.fromx) + to_string(bestMove.fromy) + to_string(bestMove.tox)  + to_string(bestMove.toy), __LINE__);
+        bestMoveRecv = 1, mateRecv = 1; //end of cmd "go ..."
     }
     else if (line.find("score mate 0") != string::npos)
     {

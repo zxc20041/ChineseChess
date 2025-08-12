@@ -6,6 +6,7 @@ using namespace debugger;
 
 CChessLocalPVP::CChessLocalPVP():CChessEngine()
 {
+	update_check_win = 0, match_over = 0, win_side = 0;
 }
 
 CChessLocalPVP::~CChessLocalPVP()
@@ -73,6 +74,23 @@ void CChessLocalPVP::Reset()
 	return;
 }
 
+void CChessLocalPVP::Update()
+{
+	if (update_check_win)
+	{
+		bool result;
+		if (engineAdapter.GetWin(result))
+		{
+			if (result)
+			{
+				 win_side = !current_side_red;
+				 match_over = 1;
+			}
+		}
+	}
+	return;
+}
+
 void CChessLocalPVP::MovePiece(CChessBase::PieceMoveDesc move)
 {
 	bool valid = 0;
@@ -100,6 +118,8 @@ void CChessLocalPVP::MovePiece(CChessBase::PieceMoveDesc move)
 
 	current_side_red = !current_side_red;
 
+	engineAdapter.MovePiece(move);
+	update_check_win = 1;
 	//print map
 	debugger_main.writelog(DDEBUG, "map info", __LINE__);
 	for (int i = BOARD_Y_MAX; i >= 0; i--)

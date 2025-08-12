@@ -22,8 +22,9 @@ public:
 
 
 	//一方胜利时退出引擎
-	bool GetWin();
+	bool GetWin(bool& result);
 
+	bool CheckBestMove();
 	CChessBase::PieceMoveDesc GetBestMove();
 
 	enum class ENGINE_STATUS
@@ -48,7 +49,7 @@ private:
 
 	ENGINE_STATUS status;
 
-	bool enable_LimitStrength, bestMoveRecv, noBestMove, mate;
+	bool enable_LimitStrength, bestMoveRecv, noBestMove, mate, uciOK, mateRecv;
 
 	int elo;
 
@@ -56,7 +57,7 @@ private:
 
 	float stepTime, targetStepTime;
 
-	std::string exeFileNames[EXE_FILENAME_MAX],argument;
+	std::string exeFileNames[EXE_FILENAME_MAX], argument;
 
 
 	//ba::streambuf out_buf, err_buf;

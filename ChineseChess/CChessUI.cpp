@@ -100,7 +100,7 @@ void CChessUI::Update()
 			}
 		}
 	}
-
+	engine->Update();
 	render.Update();
 	return;
 }
