@@ -2,8 +2,8 @@
 //
 
 #include "ChineseChess.h"
-#include"settings.h"
-#include"audio_thread.h"
+#include"..\settings.h"
+#include"..\audio_thread.h"
 
 using namespace debugger;
 

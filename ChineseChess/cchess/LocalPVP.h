@@ -9,6 +9,7 @@ public:
 	// Í¨¹ý CChessEngine ¼Ì³Ð
 	virtual void Reset() override;
 	virtual void Update() override;
+	virtual CChessBase::EngineResult GetResult()override;
 	virtual void MovePiece(CChessBase::PieceMoveDesc move) override;
 	virtual std::vector<CChessBase::PiecePosDesc> SelectPiece(CChessBase::PiecePosDesc pos) override;
 	virtual void SetSide(bool side_red) override;
@@ -19,4 +20,5 @@ private:
 	std::vector<CChessBase::PiecePosDesc> availablePositions[9][10];
 
 	bool update_check_win, match_over, win_side;
+	CChessBase::EngineResult result;
 };

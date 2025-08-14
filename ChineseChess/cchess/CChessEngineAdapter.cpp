@@ -1,4 +1,4 @@
-#include"framework_base.h"
+#include"..\framework_base.h"
 #include"CChessEngineAdapter.h"
 #include <boost/asio.hpp>
 #include <boost/process/windows.hpp>
@@ -42,7 +42,7 @@ void CChessEngineAdapter::Reset()
         //write quit
         write_input("quit");
     }
-    
+
 
     //start process
     proc = bp::child(
@@ -61,22 +61,22 @@ void CChessEngineAdapter::Reset()
     }
 
     // 创建线程处理异步I/O
-    std::thread out_thread([&] 
-    {
-        std::string line;
-        while (proc.running()) 
+    std::thread out_thread([&]
         {
-            std::getline(out, line);
-            read_output(line);
-            Sleep(1);
-        }
-        status = ENGINE_STATUS::E_FAILED;
-        debugger_main.writelog(DDEBUG, "out_thread stopped running", __LINE__);
-        return;
-    });
+            std::string line;
+            while (proc.running())
+            {
+                std::getline(out, line);
+                read_output(line);
+                Sleep(1);
+            }
+            status = ENGINE_STATUS::E_FAILED;
+            debugger_main.writelog(DDEBUG, "out_thread stopped running", __LINE__);
+            return;
+        });
     out_thread.detach();
     status = ENGINE_STATUS::E_READY;
-    
+
 
     //set option and enter uci
     write_input("uci");
@@ -109,7 +109,7 @@ void CChessEngineAdapter::SetElo(int elo)
         return;
     }
     this->elo = elo;
-    
+
     return;
 }
 
@@ -140,14 +140,20 @@ void CChessEngineAdapter::MovePiece(CChessBase::PieceMoveDesc move)
     return;
 }
 
-bool CChessEngineAdapter::GetWin(bool& result)
+EngineResult CChessEngineAdapter::GetResult()
 {
+    EngineResult r;
     if (!mateRecv)
     {
-        return 0;
+        r.valid = 0;
+        return r;
     }
-    result= noBestMove && mate;
-    return 1;
+    if (noBestMove && mate)
+    {
+        r.result = RESULT_MATE;
+        r.valid = 1;
+    }
+    return r;
 }
 
 bool CChessEngineAdapter::CheckBestMove()
@@ -175,7 +181,7 @@ CChessBase::PieceMoveDesc CChessEngineAdapter::GetBestMove()
 
 void CChessEngineAdapter::read_output(string line)
 {
-    
+
     debugger_main.writelog(DDEBUG, "read_output from proc: " + line, __LINE__);
     size_t find_pos;
     if (line.find("uciok") != string::npos)
@@ -200,7 +206,7 @@ void CChessEngineAdapter::read_output(string line)
         bestMove.fromy = line[find_pos + sizeof("bestmove") + 1] - '0';
         bestMove.tox = line[find_pos + sizeof("bestmove") + 2] - 'a';
         bestMove.toy = line[find_pos + sizeof("bestmove") + 3] - '0';
-        debugger_main.writelog(DDEBUG, "get bestmove: " + to_string(bestMove.fromx) + to_string(bestMove.fromy) + to_string(bestMove.tox)  + to_string(bestMove.toy), __LINE__);
+        debugger_main.writelog(DDEBUG, "get bestmove: " + to_string(bestMove.fromx) + to_string(bestMove.fromy) + to_string(bestMove.tox) + to_string(bestMove.toy), __LINE__);
         bestMoveRecv = 1, mateRecv = 1; //end of cmd "go ..."
     }
     else if (line.find("score mate 0") != string::npos)
@@ -219,7 +225,7 @@ void CChessEngineAdapter::write_input(string cmd)
         status = ENGINE_STATUS::E_FAILED;
         return;
     }
-    //cmd += '\n';
+
     in << cmd << std::endl;
 
     debugger_main.writelog(DDEBUG, "write_input: " + cmd, __LINE__);
@@ -231,25 +237,5 @@ void CChessEngineAdapter::write_input(string cmd)
             proc.terminate();
         }
     }
-    //ba::async_write(in, ba::dynamic_buffer(cmd), [&](boost::system::error_code ec, std::size_t n)
-    //    {
-    //        if (!ec)
-    //        {
-    //            //debugger_main.writelog(DDEBUG, "write: " + line, __LINE__);
-    //            if (cmd == "quit\n")
-    //            {
-    //                Sleep(500);
-    //                if (proc.running())
-    //                {
-    //                    proc.terminate();
-    //                }
-    //            }
-    //        }
-    //        else
-    //        {
-    //            //debugger_main.writelog(DWARNNING, "write failed: " + line, __LINE__);
-    //        }
-    //    }
-    //);
     return;
 }

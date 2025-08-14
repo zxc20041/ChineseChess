@@ -24,6 +24,13 @@ namespace CChessBase
 		PIECE_DIED
 	};
 
+	enum EningeResultType
+	{
+		RESULT_MATE,
+		RESULT_DRAW,
+		RESULT_RESIGN
+	};
+
 	/*               BLACK
 	  +---+---+---+---+---+---+---+---+---+
 		| r | n | b | a | k | a | b | n | r | 9
@@ -68,6 +75,12 @@ namespace CChessBase
 	struct PieceMoveDesc
 	{
 		int fromx, fromy, tox, toy;
+	};
+	struct EngineResult
+	{
+		EningeResultType result;
+		bool valid;
+		bool win_side;
 	};
 	constexpr int BOARD_Y_MAX = 9, BOARD_X_MAX = 8, BOARD_Y_MIN = 0, BOARD_X_MIN = 0;
 	constexpr static int SIDE_BLACK = 0;

@@ -151,15 +151,16 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="audio_thread.h" />
-    <ClInclude Include="CChessBase.h" />
-    <ClInclude Include="CChessEngineAdapter.h" />
-    <ClInclude Include="CChessEngineCore.h" />
-    <ClInclude Include="CChessUI.h" />
-    <ClInclude Include="ChineseChess.h" />
+    <ClInclude Include="cchess\CChessBase.h" />
+    <ClInclude Include="cchess\CChessEngineAdapter.h" />
+    <ClInclude Include="cchess\CChessEngineCore.h" />
+    <ClInclude Include="cchess\CChessUI.h" />
+    <ClInclude Include="cchess\ChineseChess.h" />
+    <ClInclude Include="cchess\LocalPVE.h" />
+    <ClInclude Include="cchess\LocalPVP.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="framework_base.h" />
     <ClInclude Include="framework_pages.h" />
-    <ClInclude Include="LocalPVP.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="settings.h" />
     <ClInclude Include="targetver.h" />
@@ -168,15 +169,15 @@
   <ItemGroup>
     <ClCompile Include="AppMain.cpp" />
     <ClCompile Include="audio_thread.cpp" />
-    <ClCompile Include="CChessBase.cpp" />
-    <ClCompile Include="CChessEngineAdapter.cpp" />
-    <ClCompile Include="CChessEngineCore.cpp" />
-    <ClCompile Include="CChessUI.cpp" />
-    <ClCompile Include="ChineseChess.cpp" />
+    <ClCompile Include="cchess\CChessEngineAdapter.cpp" />
+    <ClCompile Include="cchess\CChessEngineCore.cpp" />
+    <ClCompile Include="cchess\CChessUI.cpp" />
+    <ClCompile Include="cchess\ChineseChess.cpp" />
+    <ClCompile Include="cchess\LocalPVE.cpp" />
+    <ClCompile Include="cchess\LocalPVP.cpp" />
     <ClCompile Include="framework_base.cpp" />
     <ClCompile Include="framework_pages.cpp" />
     <ClCompile Include="IO_thread.cpp" />
-    <ClCompile Include="LocalPVP.cpp" />
     <ClCompile Include="settings.cpp" />
     <ClCompile Include="thread_communicate.cpp" />
   </ItemGroup>
@@ -186,9 +187,6 @@
   <ItemGroup>
     <Image Include="ChineseChess.ico" />
     <Image Include="small.ico" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="ClassDiagram.cd" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

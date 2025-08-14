@@ -101,6 +101,16 @@ void CChessUI::Update()
 		}
 	}
 	engine->Update();
+
+	EngineResult r = engine->GetResult();
+	if (r.valid)
+	{
+		if (r.result == RESULT_MATE)
+		{
+			render.GameOver(r.win_side);
+		}
+	}
+
 	render.Update();
 	return;
 }
@@ -475,9 +485,18 @@ void CChessUI::UIRender::MovePiece(PieceMoveDesc move, bool eat)
 	return;
 }
 
-void CChessUI::UIRender::Eat(int x, int y)
+void CChessUI::UIRender::GameOver(bool win_side)
 {
+	debugger_main.writelog(DINFO, "gameover win_side= " + win_side ? string("red") : string("black"), __LINE__);
+
 }
+
+void CChessUI::UIRender::PostDraw(bool post_side)
+{
+	debugger_main.writelog(DINFO, "PostDraw post_side= " + post_side ? string("red") : string("black"), __LINE__);
+
+}
+
 
 unique_ptr<Box> CChessUI::UIRender::GetBox(int x, int y)
 {

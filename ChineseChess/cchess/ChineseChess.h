@@ -1,6 +1,6 @@
 #pragma once
 
-#include"framework_base.h"
+#include"..\framework_base.h"
 #include"CChessUI.h"
 #include"localPVP.h"
 

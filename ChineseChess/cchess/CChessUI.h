@@ -1,5 +1,5 @@
 #pragma once
-#include"framework_base.h"
+#include"..\framework_base.h"
 #include"CChessBase.h"
 #include"CChessEngineCore.h"
 
@@ -12,7 +12,7 @@ struct PIECE_ATLAS_INFO
 	D2D1_RECT_F down_rect;
 };
 
-//todo: add PIECE_UI class
+
 class PIECE_UI
 {
 public:
@@ -70,7 +70,6 @@ private:
 
 
 		void Update();
-		//void RendStaticPiece(PIECE_UI& piece);
 		void RendPieces();
 		void RendBG();
 		void RendMark();
@@ -82,7 +81,8 @@ private:
 		void SelectPiece(int x, int y);
 		void UnSelectPiece(int x, int y);
 		void MovePiece(PieceMoveDesc move, bool eat);
-		void Eat(int x, int y);
+		void GameOver(bool win_side);
+		void PostDraw(bool post_side);
 
 		unique_ptr<Box>GetBox(int x, int y);
 	private:

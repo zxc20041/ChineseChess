@@ -1,6 +1,6 @@
 #pragma once
 #include"framework_base.h"
-#include"ChineseChess.h"
+#include"cchess\ChineseChess.h"
 
 
 class Start_Page :public PAGE

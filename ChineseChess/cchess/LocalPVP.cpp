@@ -1,5 +1,5 @@
 #include"LocalPVP.h"
-#include"framework_base.h"
+#include"..\framework_base.h"
 using namespace std;
 using namespace CChessBase;
 using namespace debugger;
@@ -78,17 +78,30 @@ void CChessLocalPVP::Update()
 {
 	if (update_check_win)
 	{
-		bool result;
-		if (engineAdapter.GetWin(result))
+		EngineResult r = engineAdapter.GetResult();
+		if (r.valid)
 		{
-			if (result)
+			if (result.result == RESULT_MATE)
 			{
 				 win_side = !current_side_red;
 				 match_over = 1;
+				 r.win_side = !current_side_red;
 			}
+			result = r;
+			update_check_win = 0;
 		}
 	}
 	return;
+}
+
+EngineResult CChessLocalPVP::GetResult()
+{
+	EngineResult r = result;
+	if (r.valid)
+	{
+		result.valid = 0;
+	}
+	return r;
 }
 
 void CChessLocalPVP::MovePiece(CChessBase::PieceMoveDesc move)

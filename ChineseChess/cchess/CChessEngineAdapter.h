@@ -22,7 +22,8 @@ public:
 
 
 	//一方胜利时退出引擎
-	bool GetWin(bool& result);
+	CChessBase::EngineResult GetResult();
+
 
 	bool CheckBestMove();
 	CChessBase::PieceMoveDesc GetBestMove();
