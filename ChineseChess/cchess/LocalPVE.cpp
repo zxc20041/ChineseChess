@@ -4,3 +4,15 @@
 using namespace std;
 using namespace debugger;
 using namespace CChessBase;
+
+CChessLocalPVE::CChessLocalPVE() :CChessLocalPVP()
+{
+}
+
+CChessLocalPVE::~CChessLocalPVE()
+{
+}
+
+void CChessLocalPVE::Update()
+{
+}

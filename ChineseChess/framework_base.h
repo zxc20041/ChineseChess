@@ -41,9 +41,12 @@ constexpr int ANIME_MAX = 128;
 constexpr int BOX_MAX = 1024;
 constexpr float PI = 3.14159265F;
 
+//PAGE INDEX
 constexpr int PAGE_HOME = 0;
 constexpr int PAGE_SETTING = 1;
 constexpr int PAGE_GAME = 2;
+constexpr int PAGE_GAME_PVE = 3;
+constexpr int PAGE_GAME_ONLINE = 4;
 constexpr int PAGE_HISTORY = 5;
 constexpr int PAGE_RECORD = 6;
 constexpr int PAGE_CONNECT = 7;

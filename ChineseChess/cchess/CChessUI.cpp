@@ -357,7 +357,7 @@ bool CChessUI::UIRender::LoadPiecesAtlasInfo()
 	int cnt = 0, index = 0;
 	if (text == nullptr)
 	{
-		debugger_main.writelog(DERROR, "pieces atlas data not found", __LINE__);
+		debugger_main.writelog(DWARNNING, "pieces atlas data not found", __LINE__);
 		return 0;
 	}
 	string strbuf[64][4];

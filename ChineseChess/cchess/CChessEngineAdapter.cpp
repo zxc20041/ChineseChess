@@ -152,6 +152,7 @@ EngineResult CChessEngineAdapter::GetResult()
     {
         r.result = RESULT_MATE;
         r.valid = 1;
+        noBestMove = 0, mate = 0;
     }
     return r;
 }

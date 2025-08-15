@@ -51,13 +51,16 @@
     <ClInclude Include="cchess\CChessUI.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="cchess\ChineseChess.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="cchess\LocalPVE.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="cchess\LocalPVP.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="cchess\pages\ChineseChess.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="cchess\pages\ChineseChessPVE.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
@@ -89,9 +92,6 @@
     <ClCompile Include="cchess\CChessUI.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="cchess\ChineseChess.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="cchess\LocalPVE.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
@@ -99,6 +99,12 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="cchess\CChessEngineAdapter.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="cchess\pages\ChineseChess.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="cchess\pages\ChineseChessPVE.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

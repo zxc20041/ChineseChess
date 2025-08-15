@@ -1,10 +1,12 @@
-// ChineseChess.cpp : 定义应用程序的入口点。
+// ChineseChess.cpp
 //
 
 #include "ChineseChess.h"
-#include"..\settings.h"
-#include"..\audio_thread.h"
+#include"settings.h"
+#include"audio_thread.h"
 
+
+using namespace std::chrono_literals;
 using namespace debugger;
 
 LocalGame_Page::LocalGame_Page() :PAGE(PAGE_INDEX, PAGE_CREATED_STATUS, Effect::WHITE_CIRCLE_SWITCH, 2, "LocalGame")
@@ -32,18 +34,20 @@ void LocalGame_Page::Update()
 	PAGE::Update();
 	if (Page_status < PAGE_PREPARED_STATUS)
 	{
-		if (!g_rm.GetFinishLoading())
+		auto status = task.wait_for(0ms);
+		if (status != std::future_status::ready)
 		{
 			//debugger_main.writelog(DDEBUG, "in LocalGame_Page::Update() waiting FinishLoading", __LINE__);
 			if (returnButton->getClicked())
 			{
+				task.wait();
 				g_cm.CreateEffect(9);
 				g_PageManager.SwitchPageTo(HOME_PAGE_INDEX);
 			}
 			return;
 		}
 
-		OnLoad();
+		//OnLoad();
 		Page_status = PAGE_PREPARED_STATUS;
 
 	}
@@ -78,7 +82,26 @@ bool LocalGame_Page::EnterPage()
 {
 	g_am.PlayBGM(BGM_INGAME, 1, 1);
 	PAGE::EnterPage();
+	//create async task
+	task = std::async(std::launch::async, [&]
+		{
+			chessEngine = make_shared<CChessLocalPVP>();
+			chessEngine->Reset();
+			CUI.SetEngine(chessEngine);
 
+			while (!g_rm.GetFinishLoading())
+			{
+				Sleep(1);
+			}
+			//resolve atlas data
+			if (!CUI.LoadPiecesAtlasInfo())
+			{
+				g_PageManager.SwitchPageTo(HOME_PAGE_INDEX);
+				g_am.playEffectSound(8);
+			}
+			CUI.Reset();
+			return;
+		});
 	TEXTURE_DESC brush_only{ 0,0,0,0,1 };
 	g_rm.AddResource("bg board", ".\\game\\pic\\board.jpg", ResourceManager::ResourceType::Resource_Texture, "DE601E07F5C7D8B8DDD81F521A458510", brush_only);
 
@@ -98,24 +121,7 @@ bool LocalGame_Page::EnterPage()
 bool LocalGame_Page::ExitPage()
 {
 	chessEngine = nullptr;
+	CUI.SetEngine(nullptr);
 	g_rm.ReleaseAll();
 	return 1;
-}
-
-void LocalGame_Page::OnLoad()
-{
-	chessEngine = make_shared<CChessLocalPVP>();
-	chessEngine->Reset();
-	//resolve atlas data
-	if (!CUI.LoadPiecesAtlasInfo())
-	{
-		g_PageManager.SwitchPageTo(HOME_PAGE_INDEX);
-		g_am.playEffectSound(8);
-	}
-
-	CUI.SetEngine(chessEngine);
-
-	CUI.Reset();
-
-	return;
 }

@@ -1,3 +1,12 @@
 #pragma once
-#include"CChessEngineCore.h"
+#include"localPVP.h"
 
+class CChessLocalPVE :public CChessLocalPVP
+{
+public:
+	CChessLocalPVE();
+	~CChessLocalPVE();
+
+	void Update() override;
+
+};
