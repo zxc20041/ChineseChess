@@ -1,6 +1,7 @@
 #pragma once
 #include"framework_base.h"
 #include"cchess\pages\ChineseChess.h"
+#include"cchess\pages\ChineseChessPVE.h"
 
 
 class Start_Page :public PAGE
@@ -57,7 +58,7 @@ public:
     bool ExitPage() override;
     constexpr static int PAGE_INDEX = PAGE_HOME;
 private:
-    shared_ptr<Button> startButton,  quitButton,  settingButton,  extraButton;
+    shared_ptr<Button> startButton, quitButton, settingButton, PVEButton, PVPOnlineButton;
     int homepage_bg_type, homepage_text_type;
     float bg_transform_x, bg_transform_y, bg_light_opacity;
     bool text_type;
@@ -136,4 +137,19 @@ private:
 
     //after clicking okButton
     void Update2(); 
+};
+
+
+class VERIFY_FAILED_PAGE :public PAGE
+{
+public:
+    VERIFY_FAILED_PAGE();
+
+    void Rend() override;
+
+    constexpr static int PAGE_INDEX = PAGE_VERIFY_FAILED;
+private:
+    // Í¨¹ý PAGE ¼Ì³Ð
+    bool ExitPage() override;
+
 };

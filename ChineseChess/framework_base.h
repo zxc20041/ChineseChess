@@ -784,11 +784,6 @@ bool setClipBoard(string content);
 //程序重启
 void self_restart();
 
-//设定跳转的目标页面和目标页面状态
-void set_target_page(int page_index, int page_status, float delay_time);
-
-//set_target_page()实现
-void update_target_page();
 
 
 //渲染部分
@@ -973,18 +968,10 @@ void update();
 
 //渲染对应内容
 
-
-//执行页面逻辑并渲染其它内容
-void rendPage();
-
 void rend_quit();
 
 
-void rend_verification_warning();
-
 //各个页面逻辑及内容已移至其它文件
-
-
 
 
 //main application loop

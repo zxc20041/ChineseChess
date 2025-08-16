@@ -230,7 +230,7 @@ void render()
         return;
     }
     g_cm.update();
-    rendPage();
+    //rendPage();
     g_PageManager.update();
     g_PageManager.rend();
     g_cm.rend();

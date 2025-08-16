@@ -4,6 +4,7 @@
 #include "thread_communicate.h"
 #include "settings.h"
 
+using namespace debugger;
 
 Start_Page::StartPageRectangle::StartPageRectangle()
 {
@@ -60,8 +61,7 @@ void Start_Page::Update()
 {
     if (md5_result < 0)
     {
-        g_PageManager.SwitchPageTo(PAGE_VERIFY_FAILED,0);  //verify failed
-                                                         //page_index = PAGE_VERIFY_FAILED;
+        g_PageManager.SwitchPageTo(PAGE_VERIFY_FAILED, 0);  //verify failed
         return;
     }
 
@@ -151,7 +151,7 @@ bool Start_Page::ExitPage()
 
 Home_Page::Home_Page() :PAGE(PAGE_INDEX, PAGE_CREATED_STATUS, Effect::EFF_NONE, 2,"Home Page")
 {
-    startButton = quitButton = settingButton = extraButton= nullptr;
+    startButton = quitButton = settingButton = PVEButton = PVPOnlineButton = nullptr;
     homepage_bg_type = homepage_text_type = 0;
     bg_transform_x = 0, bg_transform_y = 0, bg_light_opacity = 0.3f;
     text_type = 0;
@@ -168,7 +168,7 @@ bool Home_Page::Init()
     startButton = make_shared<Button>(280, 700, 470, 800, lan[0].start, g_pBrushYellow, g_pBrushBlue, g_pBrushGreen);
     quitButton = make_shared<Button>(900, 670, 1050, 750, ""/*lan[0].quit*/, g_pBrushYellow, g_pBrushBlue, g_pBrushGreen, g_pD2DBimtapUI[1]);
     settingButton = make_shared<Button>(600, 680, 750, 750, "", g_pBrushYellow, g_pBrushBlue, g_pBrushGreen, g_pD2DBimtapUI[0]);
-    extraButton = make_shared<Button>(280, 530, 470, 630, "Extra", g_pBrushYellow, g_pBrushBlue, g_pBrushGreen);
+    PVEButton = make_shared<Button>(280, 530, 470, 630, lan[0].PVE, g_pBrushGreen, g_pBrushYellow, g_pBrushBlue);
     return 1;
 }
 
@@ -195,10 +195,9 @@ void Home_Page::Update()
     {
         g_PageManager.SwitchPageTo(LocalGame_Page::PAGE_INDEX);
     }
-    else if (extraButton->getClicked())
+    else if (PVEButton->getClicked())
     {
-        //set_target_page(MAP_COLORING_PAGE::PAGE_INDEX, 0, 0);
-        //g_PageManager.SwitchPageTo(MAP_COLORING_PAGE::PAGE_INDEX);
+        g_PageManager.SwitchPageTo(LocalGamePVE_Page::PAGE_INDEX);
     }
     return;
 }
@@ -228,7 +227,7 @@ bool Home_Page::EnterPage()
     g_cm.AddButton(quitButton);
     g_cm.AddButton(startButton);
     g_cm.AddButton(settingButton);
-    g_cm.AddButton(extraButton);
+    g_cm.AddButton(PVEButton);
 
     bg_transform_x = rand() % 4000;
     bg_transform_y = rand() % 4000;
@@ -1239,5 +1238,42 @@ bool New_User_Page::EnterPage()
 bool New_User_Page::ExitPage()
 {
     g_rm.ReleaseAll();
+    return 1;
+}
+
+VERIFY_FAILED_PAGE::VERIFY_FAILED_PAGE():PAGE(PAGE_INDEX,PAGE_CREATED_STATUS, Effect::EFF_NONE, 0, "VERIFY FAILED PAGE")
+{
+}
+
+void VERIFY_FAILED_PAGE::Rend()
+{
+    g_pD2DDeviceContext->Clear(D2D1::ColorF(D2D1::ColorF::LightSlateGray));
+    g_pD2DDeviceContext->FillEllipse(D2D1::Ellipse(D2D1::Point2(to_screen(800), to_screen(350)), to_screen(200), to_screen(200)), g_pBrushRed);
+    g_pD2DDeviceContext->FillRoundedRectangle(
+        D2D1::RoundedRect(
+            D2D1::RectF(to_screen(780), to_screen(200), to_screen(820),
+                to_screen(430)),
+            to_screen(10.0f),
+            to_screen(10.0f)),
+        g_pBrushYellow
+    );
+    g_pD2DDeviceContext->FillEllipse(D2D1::Ellipse(D2D1::Point2(to_screen(800), to_screen(470)), to_screen(20), to_screen(20)), g_pBrushYellow);
+    DrawTextA_1(
+        "Oops, resource file corrupted.\nPlease reinstall the application.\nYou may keep the \"save\" folder to keep your progress.",           // Text to render
+        g_pTextFormatNormal,     // Text format
+        D2D1::RectF(to_screen(300), to_screen(650), to_screen(1300),
+            to_screen(850)),
+        // The region of the window where the text will be rendered
+        g_pBrushBlack      // The brush used to draw the text
+    );
+    if (clicking)
+    {
+        normal_quit = 1;
+    }
+    return;
+}
+
+bool VERIFY_FAILED_PAGE::ExitPage()
+{
     return 1;
 }

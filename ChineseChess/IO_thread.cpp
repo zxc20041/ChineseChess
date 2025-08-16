@@ -457,7 +457,7 @@ unsigned __stdcall File_IO(LPVOID lpParameter)
     
     file.open(filename_dbg, ios::app);
     readConfig();
-    while (thread_IO_config_read !=1 )
+    while (thread_IO_config_read != 1)
     {
         Sleep(1);
     }
@@ -523,7 +523,7 @@ unsigned __stdcall File_IO(LPVOID lpParameter)
                 written = 0;
             }
         }
-        if (thread_IO_request_verify_res ==-1)
+        if (thread_IO_request_verify_res == -1)
         {
             thread_IO_request_verify_res = 0;
 

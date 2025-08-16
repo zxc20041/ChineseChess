@@ -545,7 +545,7 @@ bool ResourceManager::LoadAll_implementation()
         if (!verifyFile(i))
         {
             debugger_main.writelog(DWARNNING, "verifyFile failed: " + i->filePath, __LINE__);
-            //set_target_page(PAGE_VERIFY_FAILED, 0, 0);
+
             return 0;
         }
         if (i->type == ResourceType::Resource_Texture)
@@ -2543,39 +2543,6 @@ void InitPage(int index)
     return;
 }
 
-int page_index_target = 0, page_status_target = 0;
-float target_delay_time = 0;
-bool target_valid = 0;
-void set_target_page(int page_index, int page_status, float delay_time)
-{
-    if (target_valid)
-    {
-        return;
-    }
-    page_index_target = page_index;
-    page_status_target = page_status;
-    target_delay_time = delay_time;
-    target_valid = 1;
-    return;
-}
-
-void update_target_page()
-{
-    if (!target_valid)
-    {
-        return;
-    }
-    target_delay_time -= frmtm;
-    if (target_delay_time < 0)
-    {
-        target_valid = 0;
-        page_index = page_index_target;
-        page_status = page_status_target;
-
-    }
-    return;
-}
-
 
 void OnSize()
 {
@@ -4317,8 +4284,6 @@ void FillOpacityMask_1(float x1, float y1, float x2, float y2, ID2D1Brush* brush
 
 void update()   
 {
-    
-
     t_end = Clock::now();
     durnanosec = chrono::duration_cast<std::chrono::nanoseconds>(t_end - t_start).count();
     frmtm = (float)durnanosec / 1000000000;
@@ -4332,7 +4297,7 @@ void update()
         nframe = 0;
         dur20 = 0;
     }
-    update_target_page();
+    //update_target_page();
     input();
 
     wheel_move_value = 0;
@@ -4730,44 +4695,44 @@ void process_quit()
 }
 
 
-void rendPage()
-{
-    g_pD2DDeviceContext->Clear(D2D1::ColorF(D2D1::ColorF::Black));
-    //writelog(to_string(page_index));
-    switch (page_index)
-    {
-    case PAGE_HOME:
-        //rend_home_page();
-        break;
-    case PAGE_SETTING:
-        //rend_setting_page();
-        break;
-    case PAGE_GAME:
-    //case MAP_COLORING_PAGE::PAGE_INDEX:
-        break;
-    case PAGE_HISTORY:
-        //rend_page_history();
-        break;
-    case PAGE_RECORD:
-        //rend_page_record();
-        break;
-    case 1000:
-    case 1001:
-        //rend_start();
-        break;
-    case PAGE_VERIFY_FAILED:
-        rend_verification_warning();
-        break;
-    case PAGE_REGISTER:
-        //rend_new_user();
-        break;
-    default:
-        debugger_main.writelog(DERROR, "unexpected page_index in rendPage! " + to_string(page_index), __LINE__);
-        MessageBox(hWnd, "rendPage failed!", "Error", MB_OK|MB_ICONERROR);
-        break;
-    }
-    return;
-}
+//void rendPage()
+//{
+//    g_pD2DDeviceContext->Clear(D2D1::ColorF(D2D1::ColorF::Black));
+//    //writelog(to_string(page_index));
+//    switch (page_index)
+//    {
+//    case PAGE_HOME:
+//        //rend_home_page();
+//        break;
+//    case PAGE_SETTING:
+//        //rend_setting_page();
+//        break;
+//    case PAGE_GAME:
+//    //case MAP_COLORING_PAGE::PAGE_INDEX:
+//        break;
+//    case PAGE_HISTORY:
+//        //rend_page_history();
+//        break;
+//    case PAGE_RECORD:
+//        //rend_page_record();
+//        break;
+//    case 1000:
+//    case 1001:
+//        //rend_start();
+//        break;
+//    case PAGE_VERIFY_FAILED:
+//        rend_verification_warning();
+//        break;
+//    case PAGE_REGISTER:
+//        //rend_new_user();
+//        break;
+//    default:
+//        debugger_main.writelog(DERROR, "unexpected page_index in rendPage! " + to_string(page_index), __LINE__);
+//        MessageBox(hWnd, "rendPage failed!", "Error", MB_OK|MB_ICONERROR);
+//        break;
+//    }
+//    return;
+//}
 
 
 
@@ -4934,13 +4899,21 @@ void rend_taglines(bool interupt)
 
 void initgame()
 {
-    t_start =t_end= Clock::now();
+    t_start = t_end = Clock::now();
     thread_IO_request_verify_res = 1;
 
     HRESULT hr;
 
     debugger_main.writelog(0,"Loading Resources...");
 
+    g_PageManager.AddPage(dynamic_cast<PAGE*>(new Home_Page()));
+    g_PageManager.AddPage(dynamic_cast<PAGE*>(new Setting_Page()));
+    g_PageManager.AddPage(dynamic_cast<PAGE*>(new New_User_Page()));
+    g_PageManager.AddPage(dynamic_cast<PAGE*>(new VERIFY_FAILED_PAGE()));
+    g_PageManager.AddPage(dynamic_cast<PAGE*>(new LocalGame_Page()));
+    g_PageManager.AddPage(dynamic_cast<PAGE*>(new LocalGamePVE_Page()));
+
+    g_PageManager.SetInitalPage(dynamic_cast<PAGE*>(new Start_Page()));
 
     for (int i = 0; i < 128; i++)
     {
@@ -4962,86 +4935,81 @@ void initgame()
             {
                 writelog("resource hash verification failed!  " + res[i].filename);
                 md5_result = -1;
-                break;
+                return;
             }
         }
     }
     thread_IO_request_verify_res = 4;
     //md5_result = 1;//debug
-    if (md5_result == 1)
+
+    for (int i = 0; i < 128; i++)
     {
-        for (int i = 0; i < 128; i++)
+        if (res[i].filename != "")
         {
-            if (res[i].filename != "")
-            {
-                res[i].Lfilename = stringToLPCWSTR(res[i].filename);
-            }
+            res[i].Lfilename = stringToLPCWSTR(res[i].filename);
         }
-        debugger_main.writelog(0,"Loading Bitmap From File...");
-        for (int i = 0; i < 36; i++)
+    }
+    debugger_main.writelog(0,"Loading Bitmap From File...");
+    for (int i = 0; i < 36; i++)
+    {
+        if (res[i].filename == "")
         {
-            if (res[i].filename == "")
+            continue;
+        }
+        if (i == 13 || i == 14)
+        {
+            if (!SUCCEEDED(LoadBitmapFromFile(pIWICFactory, res[i].Lfilename, (UINT)to_screen(2000), (UINT)to_screen(1500), &g_pD2DBimtapUI[i])))   //max size 11520x8640
             {
-                continue;
-            }
-            if (i == 13 || i == 14)
-            {
-                if (!SUCCEEDED(LoadBitmapFromFile(pIWICFactory, res[i].Lfilename, (UINT)to_screen(2000), (UINT)to_screen(1500), &g_pD2DBimtapUI[i])))   //max size 11520x8640
-                {
-                    writelog("Load Bitmap From File failed!  " + res[i].filename);
-                    normal_quit = 1;
-                    return;
-                }
-            }
-            else if (i == 16 || i == 17)
-            {
-                if (!SUCCEEDED(LoadBitmapFromFile(pIWICFactory, res[i].Lfilename, (UINT)to_screen(900), (UINT)to_screen(900), &g_pD2DBimtapUI[i])))   //max size 11520x8640
-                {
-                    writelog("Load Bitmap From File failed!  " + res[i].filename);
-                    normal_quit = 1;
-                    return;
-                }
-            }
-            else if (!SUCCEEDED(LoadBitmapFromFile(pIWICFactory, res[i].Lfilename, 0, 0, &g_pD2DBimtapUI[i])))
-            {
-                writelog("Load Bitmap From File failed!  "+ res[i].filename);
+                writelog("Load Bitmap From File failed!  " + res[i].filename);
                 normal_quit = 1;
                 return;
             }
         }
-        thread_IO_request_verify_res = 5;
+        else if (i == 16 || i == 17)
+        {
+            if (!SUCCEEDED(LoadBitmapFromFile(pIWICFactory, res[i].Lfilename, (UINT)to_screen(900), (UINT)to_screen(900), &g_pD2DBimtapUI[i])))   //max size 11520x8640
+            {
+                writelog("Load Bitmap From File failed!  " + res[i].filename);
+                normal_quit = 1;
+                return;
+            }
+        }
+        else if (!SUCCEEDED(LoadBitmapFromFile(pIWICFactory, res[i].Lfilename, 0, 0, &g_pD2DBimtapUI[i])))
+        {
+            writelog("Load Bitmap From File failed!  "+ res[i].filename);
+            normal_quit = 1;
+            return;
+        }
+    }
+    thread_IO_request_verify_res = 5;
         
 
-        D2D1_BITMAP_BRUSH_PROPERTIES1 BITMAP_BRUSH_PROPERTY1;
-        BITMAP_BRUSH_PROPERTY1.extendModeX = D2D1_EXTEND_MODE_MIRROR;
-        BITMAP_BRUSH_PROPERTY1.extendModeY = D2D1_EXTEND_MODE_MIRROR;
-        if (set2[0].MSAA==2)
-        {
-            BITMAP_BRUSH_PROPERTY1.interpolationMode = D2D1_INTERPOLATION_MODE_ANISOTROPIC;
-        }
-        else if (set2[0].MSAA == 1)
-        {
-            BITMAP_BRUSH_PROPERTY1.interpolationMode = D2D1_INTERPOLATION_MODE_LINEAR;
-        }
-        else
-        {
-            BITMAP_BRUSH_PROPERTY1.interpolationMode = D2D1_INTERPOLATION_MODE_NEAREST_NEIGHBOR;
-        }
-        for (int i = 13; i < 18; i++)
-        {
-            if (!SUCCEEDED(g_pD2DDeviceContext->CreateBitmapBrush(g_pD2DBimtapUI[i], BITMAP_BRUSH_PROPERTY1, &g_pBitmapBrushUI[i - 1])))
-            {
-                writelog("Create BitmapBrush From Bitmap failed! "+ to_string(i));
-                normal_quit = 1;
-                return;
-            }
-        }
+    D2D1_BITMAP_BRUSH_PROPERTIES1 BITMAP_BRUSH_PROPERTY1;
+    BITMAP_BRUSH_PROPERTY1.extendModeX = D2D1_EXTEND_MODE_MIRROR;
+    BITMAP_BRUSH_PROPERTY1.extendModeY = D2D1_EXTEND_MODE_MIRROR;
+    if (set2[0].MSAA==2)
+    {
+        BITMAP_BRUSH_PROPERTY1.interpolationMode = D2D1_INTERPOLATION_MODE_ANISOTROPIC;
+    }
+    else if (set2[0].MSAA == 1)
+    {
+        BITMAP_BRUSH_PROPERTY1.interpolationMode = D2D1_INTERPOLATION_MODE_LINEAR;
     }
     else
     {
-        //normal_quit = 1;
-        return;
+        BITMAP_BRUSH_PROPERTY1.interpolationMode = D2D1_INTERPOLATION_MODE_NEAREST_NEIGHBOR;
     }
+    for (int i = 13; i < 18; i++)
+    {
+        if (!SUCCEEDED(g_pD2DDeviceContext->CreateBitmapBrush(g_pD2DBimtapUI[i], BITMAP_BRUSH_PROPERTY1, &g_pBitmapBrushUI[i - 1])))
+        {
+            writelog("Create BitmapBrush From Bitmap failed! "+ to_string(i));
+            normal_quit = 1;
+            return;
+        }
+    }
+    
+
 
     thread_IO_request_verify_res = 6;
 
@@ -5231,14 +5199,7 @@ void initgame()
         SAFE_RELEASE(g_pD2DBimtapUI[i]);
     }
     
-    g_PageManager.SetInitalPage(dynamic_cast<PAGE*>(new Start_Page()));
-
-    g_PageManager.AddPage(dynamic_cast<PAGE*>(new Home_Page()));
-    g_PageManager.AddPage(dynamic_cast<PAGE*>(new Setting_Page())); 
-    g_PageManager.AddPage(dynamic_cast<PAGE*>(new New_User_Page()));
-    g_PageManager.AddPage(dynamic_cast<PAGE*>(new LocalGame_Page()));
     thread_IO_request_verify_res = 8;
-
     return;
 }
 
@@ -5425,7 +5386,6 @@ void PageManager::SwitchPageTo(int page_index, float wait_time)
     nextPage = nullptr;
     switchingPage = 1;
     
-    return;// todo: remove this line after refactor complete
     debugger_main.writelog(DDEBUG, "not found page_index in PageManager::SwitchPageTo() " + to_string(page_index), __LINE__);
     return;
 }
@@ -5466,10 +5426,7 @@ void PageManager::AddPage(PAGE* Page)
 void PageManager::SetInitalPage(PAGE* Page)
 {
     AddPage(Page);
-    /*if (!Page->EnterPage())
-    {
-        debugger_main.writelog(DERROR, "Failed to EnterPage in PageManager::SetInitalPage() page_index=" + to_string(currentPage->getPageIndex()), __LINE__);
-    }*/
+
     SwitchPageTo(Page);
     return;
 }
