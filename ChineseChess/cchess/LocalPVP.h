@@ -21,4 +21,8 @@ protected:
 
 	bool update_check_win, match_over, win_side;
 	CChessBase::EngineResult result;
+
+	virtual bool CheckBestMove() override;
+	virtual CChessBase::PieceMoveDesc GetBestMove() override;
+	virtual void SearchBestMove() override;
 };

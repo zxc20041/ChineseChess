@@ -42,7 +42,7 @@ void LocalGamePVE_Page::Update()
 
 	}
 
-	CUI.Update();
+	CUI->Update();
 	if (returnButton->getClicked())
 	{
 		g_cm.CreateEffect(Effect::WHITE_SWITCH, cpos.x, cpos.y);
@@ -63,7 +63,7 @@ void LocalGamePVE_Page::Rend()
 	{
 		return;
 	}
-	CUI.Rend();
+	CUI->Rend();
 
 	return;
 }
@@ -75,21 +75,22 @@ bool LocalGamePVE_Page::EnterPage()
 	//create async task
 	task = std::async(std::launch::async, [&]
 		{
-			chessEngine = make_shared<CChessLocalPVP>();
+			chessEngine = make_shared<CChessLocalPVE>();
 			chessEngine->Reset();
-			CUI.SetEngine(chessEngine);
+			CUI = make_unique<CChessUIPVE>();
+			CUI->SetEngine(chessEngine);
 
 			while (!g_rm.GetFinishLoading())
 			{
 				Sleep(1);
 			}
 			//resolve atlas data
-			if (!CUI.LoadPiecesAtlasInfo())
+			if (!CUI->LoadPiecesAtlasInfo())
 			{
 				g_PageManager.SwitchPageTo(HOME_PAGE_INDEX);
 				g_am.playEffectSound(8);
 			}
-			CUI.Reset();
+			CUI->Reset();
 			return;
 		});
 	
@@ -112,7 +113,8 @@ bool LocalGamePVE_Page::EnterPage()
 bool LocalGamePVE_Page::ExitPage()
 {
 	chessEngine = nullptr;
-	CUI.SetEngine(nullptr);
+	CUI->SetEngine(nullptr);
+	CUI = nullptr;
 	g_rm.ReleaseAll();
 	return 1;
 }

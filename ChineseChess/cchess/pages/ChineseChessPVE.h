@@ -1,6 +1,5 @@
 #pragma once
-#include"framework_base.h"
-#include"cchess/CChessUI.h"
+#include"cchess/CChessUIPVE.h"
 #include"cchess/localPVE.h"
 #include <future>
 class LocalGamePVE_Page :public PAGE
@@ -20,6 +19,6 @@ public:
 private:
     shared_ptr<Button> switchSideButton, returnButton;
     std::future<void> task;
-    CChessUI CUI;
+    unique_ptr<CChessUI> CUI;
     shared_ptr<CChessEngine>chessEngine;
 };

@@ -155,6 +155,7 @@
     <ClInclude Include="cchess\CChessEngineAdapter.h" />
     <ClInclude Include="cchess\CChessEngineCore.h" />
     <ClInclude Include="cchess\CChessUI.h" />
+    <ClInclude Include="cchess\CChessUIPVE.h" />
     <ClInclude Include="cchess\LocalPVE.h" />
     <ClInclude Include="cchess\LocalPVP.h" />
     <ClInclude Include="cchess\pages\ChineseChess.h" />
@@ -173,6 +174,7 @@
     <ClCompile Include="cchess\CChessEngineAdapter.cpp" />
     <ClCompile Include="cchess\CChessEngineCore.cpp" />
     <ClCompile Include="cchess\CChessUI.cpp" />
+    <ClCompile Include="cchess\CChessUIPVE.cpp" />
     <ClCompile Include="cchess\LocalPVE.cpp" />
     <ClCompile Include="cchess\LocalPVP.cpp" />
     <ClCompile Include="cchess\pages\ChineseChess.cpp" />

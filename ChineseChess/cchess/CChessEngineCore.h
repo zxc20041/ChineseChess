@@ -18,7 +18,9 @@ public:
 
 	virtual void SetSide(bool side_red) = 0;
 	virtual bool GetSide();
-
+	virtual bool CheckBestMove() = 0;
+	virtual CChessBase::PieceMoveDesc GetBestMove() = 0;
+	virtual void SearchBestMove() = 0;
 	bool GetCurrentSide();
 
 	//online
@@ -30,7 +32,7 @@ protected:
 	CChessBase::CChessMap map;
 
 	bool side_red, current_side_red;
-	//todo: add engine adapter member
+	
 	CChessEngineAdapter engineAdapter;
 private:
 	bool NotMySide(int x, int y, bool my_side);

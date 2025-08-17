@@ -52,7 +52,7 @@ void LocalGame_Page::Update()
 
 	}
 
-	CUI.Update();
+	CUI->Update();
 	if (returnButton->getClicked())
 	{
 		g_cm.CreateEffect(Effect::WHITE_SWITCH, cpos.x, cpos.y);
@@ -73,7 +73,7 @@ void LocalGame_Page::Rend()
 	{
 		return;
 	}
-	CUI.Rend();
+	CUI->Rend();
 
 	return;
 }
@@ -87,19 +87,20 @@ bool LocalGame_Page::EnterPage()
 		{
 			chessEngine = make_shared<CChessLocalPVP>();
 			chessEngine->Reset();
-			CUI.SetEngine(chessEngine);
+			CUI = make_unique<CChessUI>();
+			CUI->SetEngine(chessEngine);
 
 			while (!g_rm.GetFinishLoading())
 			{
 				Sleep(1);
 			}
 			//resolve atlas data
-			if (!CUI.LoadPiecesAtlasInfo())
+			if (!CUI->LoadPiecesAtlasInfo())
 			{
 				g_PageManager.SwitchPageTo(HOME_PAGE_INDEX);
 				g_am.playEffectSound(8);
 			}
-			CUI.Reset();
+			CUI->Reset();
 			return;
 		});
 	TEXTURE_DESC brush_only{ 0,0,0,0,1 };
@@ -121,7 +122,8 @@ bool LocalGame_Page::EnterPage()
 bool LocalGame_Page::ExitPage()
 {
 	chessEngine = nullptr;
-	CUI.SetEngine(nullptr);
+	CUI->SetEngine(nullptr);
+	CUI = nullptr;
 	g_rm.ReleaseAll();
 	return 1;
 }

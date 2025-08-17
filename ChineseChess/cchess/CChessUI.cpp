@@ -731,10 +731,10 @@ void PIECE_UI::UnSelect()
 
 void PIECE_UI::MoveTo(PieceMoveDesc move)
 {
-	if (status != PIECE_HANG)
-	{
-		return;
-	}
+	//if (status != PIECE_HANG)
+	//{
+	//	return;
+	//}
 	currentMove = move;
 	status = PIECE_MOVING_TO;
 	moving_time = 0;

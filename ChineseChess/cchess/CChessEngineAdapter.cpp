@@ -17,7 +17,8 @@ CChessEngineAdapter::CChessEngineAdapter()
     status = ENGINE_STATUS::E_INIT;
     stepTime = 0, targetStepTime = 5;
     bestMoveRecv = 0, noBestMove = 0, mate = 0, uciOK = 0, mateRecv = 0;
-    thread_num = 4;
+    thread_num = 8, targetStepDepth = 28;
+    drop_bestMove_required = 0;
     currentPosInMove = "position startpos moves";
     //todo: get exeFileNames from text
 
@@ -42,8 +43,8 @@ void CChessEngineAdapter::Reset()
         //write quit
         write_input("quit");
     }
-
-
+    drop_bestMove_required = 0;
+    bestMoveRecv = 0, noBestMove = 0, mate = 0, uciOK = 0, mateRecv = 0;
     //start process
     proc = bp::child(
         exeFileNames[0],
@@ -136,6 +137,7 @@ void CChessEngineAdapter::MovePiece(CChessBase::PieceMoveDesc move)
 
     //send cmd
     write_input(currentPosInMove);
+    drop_bestMove_required++;
     write_input("go depth 1");  //check if mate
     return;
 }
@@ -180,11 +182,27 @@ CChessBase::PieceMoveDesc CChessEngineAdapter::GetBestMove()
     return bestMove;
 }
 
+void CChessEngineAdapter::SearchBestMove()
+{
+    if (status != ENGINE_STATUS::E_READY)
+    {
+        debugger_main.writelog(DDEBUG, "status not ready in CChessEngineAdapter::SearchBestMove()", __LINE__);
+        return;
+    }
+    status = ENGINE_STATUS::E_BUSY;
+    write_input("go depth " + to_string(targetStepDepth));
+    return;
+}
+
+
 void CChessEngineAdapter::read_output(string line)
 {
-
-    debugger_main.writelog(DDEBUG, "read_output from proc: " + line, __LINE__);
     size_t find_pos;
+    if (line.find("info depth") != string::npos)
+    {
+        return;
+    }
+    debugger_main.writelog(DDEBUG, "read_output from proc: " + line, __LINE__);
     if (line.find("uciok") != string::npos)
     {
         uciOK = 1;
@@ -197,18 +215,28 @@ void CChessEngineAdapter::read_output(string line)
     }
     else if (line.find("bestmove (none)") != string::npos)
     {
+        drop_bestMove_required--;
         noBestMove = 1;
         mateRecv = 1;   //end of cmd "go depth 1"
+        status = ENGINE_STATUS::E_READY;
     }
     else if (line.find("bestmove") != string::npos)
     {
-        find_pos = line.find("bestmove");
-        bestMove.fromx = line[find_pos + sizeof("bestmove")] - 'a';
-        bestMove.fromy = line[find_pos + sizeof("bestmove") + 1] - '0';
-        bestMove.tox = line[find_pos + sizeof("bestmove") + 2] - 'a';
-        bestMove.toy = line[find_pos + sizeof("bestmove") + 3] - '0';
-        debugger_main.writelog(DDEBUG, "get bestmove: " + to_string(bestMove.fromx) + to_string(bestMove.fromy) + to_string(bestMove.tox) + to_string(bestMove.toy), __LINE__);
-        bestMoveRecv = 1, mateRecv = 1; //end of cmd "go ..."
+        if (drop_bestMove_required > 0)
+        {
+            drop_bestMove_required--;
+        }
+        else
+        {
+            find_pos = line.find("bestmove");
+            bestMove.fromx = line[find_pos + sizeof("bestmove")] - 'a';
+            bestMove.fromy = line[find_pos + sizeof("bestmove") + 1] - '0';
+            bestMove.tox = line[find_pos + sizeof("bestmove") + 2] - 'a';
+            bestMove.toy = line[find_pos + sizeof("bestmove") + 3] - '0';
+            debugger_main.writelog(DDEBUG, "get bestmove: " + to_string(bestMove.fromx) + to_string(bestMove.fromy) + to_string(bestMove.tox) + to_string(bestMove.toy), __LINE__);
+            bestMoveRecv = 1, mateRecv = 1; //end of cmd "go ..."
+            status = ENGINE_STATUS::E_READY;
+        }
     }
     else if (line.find("score mate 0") != string::npos)
     {

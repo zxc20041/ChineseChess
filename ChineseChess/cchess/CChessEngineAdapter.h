@@ -28,6 +28,8 @@ public:
 	bool CheckBestMove();
 	CChessBase::PieceMoveDesc GetBestMove();
 
+	void SearchBestMove();
+
 	enum class ENGINE_STATUS
 	{
 		E_INIT,
@@ -39,7 +41,7 @@ public:
 private:
 	constexpr static int ELO_MAX = 2850, ELO_MIN = 1350, EXE_FILENAME_MAX = 16;
 
-
+	std::atomic<int> drop_bestMove_required;
 	//std::string Move2FenString(CChessBase::PieceMoveDesc move);
 
 	//std::string currentPosInFen;
@@ -52,7 +54,7 @@ private:
 
 	bool enable_LimitStrength, bestMoveRecv, noBestMove, mate, uciOK, mateRecv;
 
-	int elo;
+	int elo, targetStepDepth;
 
 	int thread_num, hash_size;
 

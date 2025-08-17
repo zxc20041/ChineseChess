@@ -43,16 +43,16 @@ class CChessUI
 {
 public:
 	CChessUI();
-	~CChessUI();
+	virtual ~CChessUI();
 
-	void ClickAt(int line, int column);
+	virtual void ClickAt(int line, int column);
 
 	void Reset();
 	bool LoadPiecesAtlasInfo();
-	void Update();
+	virtual void Update();
 	void Rend();
 	void SetEngine(shared_ptr<CChessEngine> chessEngine);
-private:
+protected:
 	
 	CChessBase::CChessMap map;
 	bool side_red;
@@ -67,7 +67,6 @@ private:
 	public:
 		UIRender();
 		~UIRender();
-
 
 		void Update();
 		void RendPieces();

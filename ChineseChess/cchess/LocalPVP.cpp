@@ -178,3 +178,18 @@ CChessBase::CChessMap CChessLocalPVP::GetMap()
 void CChessLocalPVP::SyncMap(CChessBase::CChessMap newMap)
 {
 }
+
+bool CChessLocalPVP::CheckBestMove()
+{
+	return false;
+}
+
+CChessBase::PieceMoveDesc CChessLocalPVP::GetBestMove()
+{
+	return CChessBase::PieceMoveDesc();
+}
+
+void CChessLocalPVP::SearchBestMove()
+{
+	return;
+}

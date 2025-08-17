@@ -21,6 +21,6 @@ public:
 private:
     shared_ptr<Button> switchSideButton, returnButton;
     std::future<void> task;
-    CChessUI CUI;
+    unique_ptr<CChessUI> CUI;
     shared_ptr<CChessEngine>chessEngine;
 };
