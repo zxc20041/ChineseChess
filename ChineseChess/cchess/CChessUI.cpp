@@ -487,7 +487,8 @@ void CChessUI::UIRender::MovePiece(PieceMoveDesc move, bool eat)
 
 void CChessUI::UIRender::GameOver(bool win_side)
 {
-	debugger_main.writelog(DINFO, "gameover win_side= " + win_side ? string("red") : string("black"), __LINE__);
+	debugger_main.writelog(DINFO, "GAMEOVER win_side= " + (win_side ? string("red") : string("black")), __LINE__);
+	//todo: play anime and se, lock the board
 
 }
 

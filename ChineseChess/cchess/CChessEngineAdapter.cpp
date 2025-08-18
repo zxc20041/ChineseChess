@@ -17,7 +17,7 @@ CChessEngineAdapter::CChessEngineAdapter()
     status = ENGINE_STATUS::E_INIT;
     stepTime = 0, targetStepTime = 5;
     bestMoveRecv = 0, noBestMove = 0, mate = 0, uciOK = 0, mateRecv = 0;
-    thread_num = 8, targetStepDepth = 28;
+    thread_num = 8, targetStepDepth = 24;
     drop_bestMove_required = 0;
     currentPosInMove = "position startpos moves";
     //todo: get exeFileNames from text
@@ -145,6 +145,7 @@ void CChessEngineAdapter::MovePiece(CChessBase::PieceMoveDesc move)
 EngineResult CChessEngineAdapter::GetResult()
 {
     EngineResult r;
+    memset(&r, 0, sizeof(r));
     if (!mateRecv)
     {
         r.valid = 0;
@@ -200,7 +201,11 @@ void CChessEngineAdapter::read_output(string line)
     size_t find_pos;
     if (line.find("info depth") != string::npos)
     {
-        return;
+        if (line.find("info depth 0") == string::npos)
+        {
+            return;
+        }
+        
     }
     debugger_main.writelog(DDEBUG, "read_output from proc: " + line, __LINE__);
     if (line.find("uciok") != string::npos)
@@ -215,7 +220,11 @@ void CChessEngineAdapter::read_output(string line)
     }
     else if (line.find("bestmove (none)") != string::npos)
     {
-        drop_bestMove_required--;
+        if (drop_bestMove_required > 0)
+        {
+            drop_bestMove_required--;
+        }
+        
         noBestMove = 1;
         mateRecv = 1;   //end of cmd "go depth 1"
         status = ENGINE_STATUS::E_READY;
@@ -234,7 +243,7 @@ void CChessEngineAdapter::read_output(string line)
             bestMove.tox = line[find_pos + sizeof("bestmove") + 2] - 'a';
             bestMove.toy = line[find_pos + sizeof("bestmove") + 3] - '0';
             debugger_main.writelog(DDEBUG, "get bestmove: " + to_string(bestMove.fromx) + to_string(bestMove.fromy) + to_string(bestMove.tox) + to_string(bestMove.toy), __LINE__);
-            bestMoveRecv = 1, mateRecv = 1; //end of cmd "go ..."
+            bestMoveRecv = 1; //end of cmd "go ..."
             status = ENGINE_STATUS::E_READY;
         }
     }

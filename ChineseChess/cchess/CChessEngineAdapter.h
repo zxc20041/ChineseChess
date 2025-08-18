@@ -41,7 +41,7 @@ public:
 private:
 	constexpr static int ELO_MAX = 2850, ELO_MIN = 1350, EXE_FILENAME_MAX = 16;
 
-	std::atomic<int> drop_bestMove_required;
+	
 	//std::string Move2FenString(CChessBase::PieceMoveDesc move);
 
 	//std::string currentPosInFen;
@@ -52,8 +52,9 @@ private:
 
 	ENGINE_STATUS status;
 
-	bool enable_LimitStrength, bestMoveRecv, noBestMove, mate, uciOK, mateRecv;
-
+	bool enable_LimitStrength;
+	std::atomic<bool> bestMoveRecv, noBestMove, mate, uciOK, mateRecv;
+	std::atomic<int> drop_bestMove_required;
 	int elo, targetStepDepth;
 
 	int thread_num, hash_size;
