@@ -11,7 +11,7 @@ ALcoms ALogg[32];
 AudioManager g_am;
 
 //载入wave文件
-bool loadWavFile(const string filename, ALuint* buffer, ALsizei* size, ALsizei* frequency, ALenum* format);
+bool loadWavFile(const string filename, ALcoms* waveData);
 
 AudioManager::AudioManager()
 {
@@ -19,44 +19,10 @@ AudioManager::AudioManager()
     {
         memset(&se[i], 0, sizeof(se[i]));
     }
-    for (int i = 0; i < SE_AUDIO_NUM; i++)
-    {
-        memset(&se_p[i], 0, sizeof(se_p[i]));
-    }
-    se_p[0].filename = ".\\sounds\\Button1.wav";
-    se_p[1].filename = ".\\sounds\\Button2.wav";
-    se_p[2].filename = ".\\sounds\\save.wav";
-    se_p[3].filename = ".\\sounds\\load.wav";
-    se_p[4].filename = ".\\sounds\\gameover.wav";
-    se_p[5].filename = ".\\sounds\\alertTick.wav";
-    se_p[6].filename = ".\\sounds\\endofpage.wav";
-    se_p[7].filename = ".\\sounds\\ioerror.wav";
-    se_p[8].filename = ".\\sounds\\pass.wav";
-    se_p[9].filename = ".\\sounds\\tick.wav";
-    se_p[10].filename = ".\\sounds\\loading.wav";
-    se_p[11].filename = "";
-    se_p[12].filename = "";
-    se_p[13].filename = "";
-    se_p[14].filename = "";
-    se_p[15].filename = "";
-    se_p[16].filename = "";
-
-    //game
-    se_p[17].filename = "";
-    se_p[18].filename = "";
-    se_p[19].filename = "";
-    se_p[20].filename = "";
-    se_p[21].filename = "";
-    se_p[22].filename = "";
-    se_p[23].filename = "";
-    se_p[24].filename = "";
-    se_p[25].filename = "";
-    se_p[26].filename = "";
-    se_p[27].filename = "";
-    se_p[28].filename = "";
-    se_p[29].filename = "";
-    se_p[30].filename = "";
     
+
+    
+    device_created = 0;
     thread_Audio_switch_immediately = 0, thread_Audio_quit_single = 0, thread_Audio_volume_changed = 0;
     thread_Audio_volume_changed_music = 0;
     current_playing_music = 0, last_music_request = 6;
@@ -73,113 +39,135 @@ void AudioManager::Init()
     if (alGetError() != AL_NO_ERROR)
     {
         debugger_audio.writelog(2, "openal init failed!");
+        return;
     }
+    device_created = 1;
     alListener3f(AL_POSITION, 0.0f, 0.0f, 0.0f);
     int alerr = AL_NO_ERROR;
-    for (int i = 0; i < SE_AUDIO_NUM; i++)
-    {
-        if (se_p[i].filename.empty())
-        {
-            continue;
-        }
-        for (int j = 0; j < SE_AUDIO_SOURCE_NUM; j++)
-        {
-            // Create sound buffer and source
-            //create our openAL buffer and check for success
-            if (j == 0)
-            {
-                alGenBuffers(1, &se_p[i].ALwav[j].bufferID);
-                alerr = alGetError();
-                if (alerr != AL_NO_ERROR)
-                {
-                    debugger_audio.writelog(1, "alGenBuffers error in ThreadPlayMusic loading wav! file=" + se_p[i].filename + " err=" + to_string(alerr));
-                }
-            }
+    string se_filenames[11],aliasNames[11];
+    se_filenames[0] = ".\\sounds\\Button1.wav";
+    se_filenames[1] = ".\\sounds\\Button2.wav";
+    se_filenames[2] = ".\\sounds\\save.wav";
+    se_filenames[3] = ".\\sounds\\load.wav";
+    se_filenames[4] = ".\\sounds\\gameover.wav";
+    se_filenames[5] = ".\\sounds\\alertTick.wav";
+    se_filenames[6] = ".\\sounds\\endofpage.wav";
+    se_filenames[7] = ".\\sounds\\ioerror.wav";
+    se_filenames[8] = ".\\sounds\\pass.wav";
+    se_filenames[9] = ".\\sounds\\tick.wav";
+    se_filenames[10] = ".\\sounds\\loading.wav";
 
-            alGenSources(1, &se_p[i].ALwav[j].sourceID);
-            alerr = alGetError();
-            if (alerr != AL_NO_ERROR)
-            {
-                debugger_audio.writelog(1, "alGenSources error in ThreadPlayMusic loading wav! file=" + se_p[i].filename + " err=" + to_string(alerr));
-            }
-            // Set the source and listener to the same location
-            alSource3f(se_p[i].ALwav[j].sourceID, AL_POSITION, 0.0f, 0.0f, 1.0f);
-        }
+    aliasNames[0] = "button1";
+    aliasNames[1] = "button2";
+    aliasNames[2] = "save";
+    aliasNames[3] = "load";
+    aliasNames[4] = "gameover";
+    aliasNames[5] = "alertTick";
+    aliasNames[6] = "endofpage";
+    aliasNames[7] = "ioerror";
+    aliasNames[8] = "pass";
+    aliasNames[9] = "tick";
+    aliasNames[10] = "loading";
+    for (int i = 0; i < 11; i++)
+    {
+        g_rm.AddResource(aliasNames[i], se_filenames[i], "pass", RESOURCE_INFO::DEFAULT_WAVE);
     }
+    g_rm.LoadAll();
     return;
 }
 
-void AudioManager::LoadWavFromFiles()
+shared_ptr<SE_INFO> AudioManager::LoadWavFromFile(string aliasName, string filePath, AUDIO_DESC audio_desc)
 {
     int alerr = AL_NO_ERROR;
-    for (int i = 0; i < SE_AUDIO_NUM; i++)
+    if (filePath.empty() || audio_desc.se_source_num == 0 || audio_desc.type != AUDIO_DESC::AUDIO_TYPE::AUDIO_TYPE_WAV)
     {
-        for (int j = 0; j < SE_AUDIO_SOURCE_NUM; j++)
+        return;
+    }
+    //prepare meta data
+    shared_ptr<SE_INFO> se_info = make_shared<SE_INFO>();
+    se_info->filename = filePath;
+    se_info->aliasName = aliasName;
+    se_info->source_num = audio_desc.se_source_num;
+    se_info->loudnessOffset = audio_desc.loudnessOffset;
+    ALcoms wave_data;
+    for (int i = 0; i < audio_desc.se_source_num; i++)
+    {
+        alGenSources(1, &wave_data.sourceID);
+        alerr = alGetError();
+        if (alerr != AL_NO_ERROR)
         {
-            if (se_p[i].filename == "")
-            {
-                continue;
-            }
-            if (j == 0)
-            {
-                if (!loadWavFile(se_p[i].filename, &se_p[i].ALwav[j].bufferID, &se_p[i].ALwav[j].size2, &se_p[i].ALwav[j].freq, &se_p[i].ALwav[j].format))
-                {
-                    debugger_audio.writelog(1, "load wavefile failed");
-                    Sleep(100);
-                    continue;
-                }
-            }
-
-            alSourcei(se_p[i].ALwav[j].sourceID, AL_BUFFER, se_p[i].ALwav[0].bufferID);
-            alSourcef(se_p[i].ALwav[j].sourceID, AL_GAIN, (float)set3[0].se_volume / 100.0F);  //音量
-            alSourcei(se_p[i].ALwav[j].sourceID, AL_SOURCE_RELATIVE, 1);
-            /*alSourcef(se_p[se[i] - 1].ALwav[j].sourceID, AL_ROLLOFF_FACTOR, 1.0f);
-            alSourcef(se_p[se[i] - 1].ALwav[j].sourceID, AL_REFERENCE_DISTANCE, 1.0f);
-            alSourcef(se_p[se[i] - 1].ALwav[j].sourceID, AL_MIN_GAIN, 0.0f);
-            alSourcef(se_p[se[i] - 1].ALwav[j].sourceID, AL_MAX_GAIN, 0.9f);*/
+            debugger_audio.writelog(1, "alGenSources error in ThreadPlayMusic loading wav! file=" + filePath + " err=" + to_string(alerr));
+            return nullptr;
+        }
+        if (i == 0)
+        {
+            alGenBuffers(1, &wave_data.bufferID);
             alerr = alGetError();
             if (alerr != AL_NO_ERROR)
             {
-                debugger_audio.writelog(1, "alSourcef error in after-load wavefile! " + to_string(alerr) + " index " + to_string(i));
+                debugger_audio.writelog(1, "alGenBuffers error in ThreadPlayMusic loading wav! file=" + filePath + " err=" + to_string(alerr));
+                return nullptr;
             }
+            if (!loadWavFile(filePath, &wave_data))
+            {
+                debugger_audio.writelog(DWARNNING, "load wavefile failed");
+                return nullptr;
+            }
+            alSourcei(wave_data.sourceID, AL_BUFFER, wave_data.bufferID);
+            alSourcef(wave_data.sourceID, AL_GAIN, (float)set3[0].se_volume / 100.0F);  //音量
+            alSourcei(wave_data.sourceID, AL_SOURCE_RELATIVE, 1);
+            alSource3f(wave_data.sourceID, AL_POSITION, 0.0f, 0.0f, 1.0f);
         }
+        else
+        {
+            alSourcei(wave_data.sourceID, AL_BUFFER, wave_data.bufferID);
+            alSourcef(wave_data.sourceID, AL_GAIN, (float)set3[0].se_volume / 100.0F);  //音量
+            alSourcei(wave_data.sourceID, AL_SOURCE_RELATIVE, 1);
+            alSource3f(wave_data.sourceID, AL_POSITION, 0.0f, 0.0f, 1.0f);
+        }
+        se_info->ALwav.push_back(wave_data);
+
+        /*alSourcef(se_p[se[i] - 1].ALwav[j].sourceID, AL_ROLLOFF_FACTOR, 1.0f);
+        alSourcef(se_p[se[i] - 1].ALwav[j].sourceID, AL_REFERENCE_DISTANCE, 1.0f);
+        alSourcef(se_p[se[i] - 1].ALwav[j].sourceID, AL_MIN_GAIN, 0.0f);
+        alSourcef(se_p[se[i] - 1].ALwav[j].sourceID, AL_MAX_GAIN, 0.9f);*/
+        alerr = alGetError();
+        if (alerr != AL_NO_ERROR)
+        {
+            debugger_audio.writelog(DWARNNING, "alSourcef error in after-load wavefile! " + to_string(alerr) + " index " + to_string(i));
+            return nullptr;
+        }
+        
     }
-    debugger_audio.writelog(0, "load wav completed.");
+    debugger_audio.writelog(DDEBUG, "load wav completed: " + filePath);
+    return se_info;
+}
+
+void AudioManager::Cleanup(shared_ptr<SE_INFO> se_info)
+{
+    if (se_info->filename.empty() || se_info->source_num == 0)
+    {
+        return;
+    }
+    for (int i = 0; i < se_info->source_num; i++)
+    {
+        alSourceStop(se_info->ALwav[i].sourceID);
+        alDeleteSources(1, &se_info->ALwav[i].sourceID);
+    }
+    alDeleteBuffers(1, &se_info->ALwav[0].bufferID);
+    
     return;
 }
 
-void AudioManager::Cleanup()
+void AudioManager::ApplySEVolumeChange(shared_ptr<SE_INFO> se_info)
 {
-    for (int i = 0; i < SE_AUDIO_NUM; i++)
+    if (se_info->filename.empty()|| se_info->source_num == 0)
     {
-        if (se_p[i].filename.empty())
-        {
-            continue;
-        }
-        for (int j = 0; j < SE_AUDIO_SOURCE_NUM; j++)
-        {
-            alSourceStop(se_p[i].ALwav[j].sourceID);
-            alDeleteSources(1, &se_p[i].ALwav[j].sourceID);
-        }
-        alDeleteBuffers(1, &se_p[i].ALwav[0].bufferID);
+        return;
     }
-    alcDestroyContext(context);
-    alcCloseDevice(device);
-    return;
-}
-
-void AudioManager::ApplySEVolumeChange()
-{
-    for (int i = 0; i < SE_AUDIO_NUM; i++)
+    for (int i = 0; i < se_info->source_num; i++)
     {
-        if (se_p[i].filename.empty())
-        {
-            continue;
-        }
-        for (int j = 0; j < SE_AUDIO_SOURCE_NUM; j++)
-        {
-            alSourcef(se_p[i].ALwav[j].sourceID, AL_GAIN, (float)set3[0].se_volume / 100.0F);  //音量
-        }
+        alSourcef(se_info->ALwav[i].sourceID, AL_GAIN, (float)set3[0].se_volume / 100.0F);  //音量
     }
     thread_Audio_volume_changed = 0;
     return;
@@ -190,70 +178,81 @@ void AudioManager::updateSE()
     int alerr = AL_NO_ERROR;
     for (int i = 0; i < SE_MAX; i++)
     {
-        if (se[i].se_index == 0)
+        if (se[i].se_aliasName.load().empty())
         {
             continue;
         }
-        int target_index = se[i].se_index - 1;
+        shared_ptr<SE_INFO> se_info;
+        
         for (int j = 0; j < SE_AUDIO_SOURCE_NUM; j++)
         {
-            alGetSourcei(se_p[target_index].ALwav[j].sourceID, AL_SOURCE_STATE, &se_p[target_index].ALwav[j].state);
+            alGetSourcei(se_info->ALwav[j].sourceID, AL_SOURCE_STATE, &se_info->ALwav[j].state);
 
-            if (se_p[target_index].ALwav[j].state == AL_STOPPED || se_p[target_index].ALwav[j].state == AL_INITIAL)
+            if (se_info->ALwav[j].state == AL_STOPPED || se_info->ALwav[j].state == AL_INITIAL)
             {
-                alSourcef(se_p[target_index].ALwav[j].sourceID, AL_GAIN, (float)set3[0].se_volume * se[i].volumn / 100.0F);  //音量
+                alSourcef(se_info->ALwav[j].sourceID, AL_GAIN, (float)set3[0].se_volume * se[i].volumn * se_info->loudnessOffset / 100.0F);  //音量
                 if (se[i].sound_3d_position)
                 {
-                    alSource3f(se_p[target_index].ALwav[j].sourceID, AL_POSITION, se[i].sound_positions[0], se[i].sound_positions[1], se[i].sound_positions[2]);
+                    alSource3f(se_info->ALwav[j].sourceID, AL_POSITION, se[i].sound_positions[0], se[i].sound_positions[1], se[i].sound_positions[2]);
                 }
 
                 alerr = alGetError();
                 if (alerr != AL_NO_ERROR)
                 {
-                    debugger_audio.writelog(1, "alSource3f error in AL_POSITION! " + to_string(alerr) + " index " + to_string(target_index) + " 3d_pos " + to_string(se[i].sound_3d_position));
+                    debugger_audio.writelog(1, "alSource3f error in AL_POSITION! " + to_string(alerr) + " file= " + se_info->filename + " 3d_pos " + to_string(se[i].sound_3d_position));
                     if (se[i].sound_3d_position)
                     {
                         debugger_audio.writelog(0, "pos x= " + to_string(se[i].sound_positions[0]) + " y= " + to_string(se[i].sound_positions[1]) + " z= " + to_string(se[i].sound_positions[2]));
                     }
                 }
-                alSourcePlay(se_p[target_index].ALwav[j].sourceID);
+                alSourcePlay(se_info->ALwav[j].sourceID);
                 break;
             }
             if (j == SE_AUDIO_SOURCE_NUM - 1)
             {
-                alSourceStop(se_p[target_index].ALwav[0].sourceID);
-                alSourcef(se_p[target_index].ALwav[0].sourceID, AL_GAIN, (float)set3[0].se_volume * se[i].volumn / 100.0F);  //音量
+                alSourceStop(se_info->ALwav[0].sourceID);
+                alSourcef(se_info->ALwav[0].sourceID, AL_GAIN, (float)set3[0].se_volume * se[i].volumn / 100.0F);  //音量
                 if (se[i].sound_3d_position)
                 {
-                    alSource3f(se_p[target_index].ALwav[0].sourceID, AL_POSITION, se[i].sound_positions[0], se[i].sound_positions[1], se[i].sound_positions[2]);
+                    alSource3f(se_info->ALwav[0].sourceID, AL_POSITION, se[i].sound_positions[0], se[i].sound_positions[1], se[i].sound_positions[2]);
                 }
                 alerr = alGetError();
                 if (alerr != AL_NO_ERROR)
                 {
-                    debugger_audio.writelog(1, "alSource3f error in AL_POSITION 0! " + to_string(alerr) + " index " + to_string(target_index) + " 3d_pos " + to_string(se[i].sound_3d_position));
+                    debugger_audio.writelog(1, "alSource3f error in AL_POSITION 0! " + to_string(alerr) + " file= " + se_info->filename + " 3d_pos " + to_string(se[i].sound_3d_position));
                     if (se[i].sound_3d_position)
                     {
                         debugger_audio.writelog(0, "pos x= " + to_string(se[i].sound_positions[0]) + " y= " + to_string(se[i].sound_positions[1]) + " z= " + to_string(se[i].sound_positions[2]));
                     }
                 }
-                alSourcePlay(se_p[target_index].ALwav[0].sourceID);
+                alSourcePlay(se_info->ALwav[0].sourceID);
             }
         }
-        se[i].se_index = 0;
+        se[i].se_aliasName.store("");
         //memset(&g_am.se[i], 0, sizeof(g_am.se[i]));
     }
     return;
 }
 
-void AudioManager::playEffectSound(int num, float volumn)
+AudioManager::~AudioManager()
+{
+    if (device_created)
+    {
+        alcDestroyContext(context);
+        alcCloseDevice(device);
+    }
+    
+}
+
+void AudioManager::PlayEffectSound(const string aliasName, const float volumn)
 {
     for (int i = 0; i < SE_MAX; i++)
     {
-        if (se[i].se_index != 0)
+        if (se[i].se_aliasName.load().empty())
         {
             continue;
         }
-        se[i].se_index = num;
+        se[i].se_aliasName.store(aliasName);
         se[i].sound_3d_position = 0;
         se[i].volumn = volumn;
         break;
@@ -262,41 +261,41 @@ void AudioManager::playEffectSound(int num, float volumn)
 }
 
 
-void AudioManager::playEffectSound(int num,float x,float y,float z, float volumn)
+void AudioManager::PlayEffectSound(string aliasName, float x, float y, float z, float volumn = 1.0f)
 {
     if (x < -1)
     {
-        debugger_audio.writelog(1, "unexpected x pos in AudioManager::playEffectSound: " + to_string(x)+" index= "+ to_string(num));
+        debugger_audio.writelog(DWARNNING, "unexpected x pos in AudioManager::playEffectSound: " + to_string(x) + " aliasName= " + aliasName);
         x = -0.99f;
     }
     else if (x > 1)
     {
-        debugger_audio.writelog(1, "unexpected x pos in AudioManager::playEffectSound: " + to_string(x) + " index= " + to_string(num));
+        debugger_audio.writelog(DWARNNING, "unexpected x pos in AudioManager::playEffectSound: " + to_string(x) + " aliasName= " + aliasName);
         x = 0.99f;
     }
     if (y < -1)
     {
-        debugger_audio.writelog(1, "unexpected y pos in AudioManager::playEffectSound: " + to_string(y) + " index= " + to_string(num));
+        debugger_audio.writelog(DWARNNING, "unexpected y pos in AudioManager::playEffectSound: " + to_string(y) + " aliasName= " + aliasName);
         y = -0.99f;
     }
     else if (y > 1)
     {
-        debugger_audio.writelog(1, "unexpected y pos in AudioManager::playEffectSound: " + to_string(y) + " index= " + to_string(num));
+        debugger_audio.writelog(DWARNNING, "unexpected y pos in AudioManager::playEffectSound: " + to_string(y) + " aliasName= " + aliasName);
         y = 0.99f;
     }
     if (z > 1)
     {
-        debugger_audio.writelog(1, "unexpected z pos in AudioManager::playEffectSound: " + to_string(z) + " index= " + to_string(num));
+        debugger_audio.writelog(DWARNNING, "unexpected z pos in AudioManager::playEffectSound: " + to_string(z) + " aliasName= " + aliasName);
         z = 1;
     }
     else if (z < 0)
     {
-        debugger_audio.writelog(1, "unexpected z pos in AudioManager::playEffectSound: " + to_string(z) + " index= " + to_string(num));
+        debugger_audio.writelog(DWARNNING, "unexpected z pos in AudioManager::playEffectSound: " + to_string(z) + " aliasName= " + aliasName);
         z = 0.1f;
     }
     for (int i = 0; i < SE_MAX; i++)
     {
-        if (se[i].se_index != 0)
+        if (se[i].se_aliasName.load().empty())
         {
             continue;
         }
@@ -312,9 +311,9 @@ void AudioManager::playEffectSound(int num,float x,float y,float z, float volumn
             se[i].sound_3d_position = 0;
         }
 
-        se[i].volumn = 1 - (0.5f * sqrtf(2 * x * x + 2 * y * y)) * volumn;
+        se[i].volumn = 1 - (0.5f * sqrtf(2 * x * x + 2 * y * y)) * volumn;  // 1-sqrt(2)/2 ~ 1
 
-        se[i].se_index = num;
+        se[i].se_aliasName.store(aliasName);
         break;
     }
     return;
@@ -327,6 +326,8 @@ void AudioManager::PlayBGM(int music_index, bool immediate, bool loop)
     isloop = loop;
     return;
 }
+
+
 
 void AudioManager::PlayMusicGroup(int group)
 {
@@ -451,8 +452,12 @@ bool LoadOGG(const char* name, ALuint* buffer, ALsizei* freq, ALenum* format, AL
 
 
 
-bool loadWavFile(const string filename, ALuint* buffer, ALsizei* size, ALsizei* frequency, ALenum* format) 
+bool loadWavFile(const string filename, ALcoms* waveData) 
 {
+    if (waveData == nullptr)
+    {
+        return 0;
+    }
     //Local Declarations
     FILE* soundFile = NULL;
     WAVE_Format wave_format;
@@ -510,29 +515,29 @@ bool loadWavFile(const string filename, ALuint* buffer, ALsizei* size, ALsizei* 
 
         //Now we set the variables that we passed in with the
         //data from the structs
-        *size = wave_data.subChunk2Size;
-        *frequency = wave_format.sampleRate;
+        waveData->size2 = wave_data.subChunk2Size;
+        waveData->freq = wave_format.sampleRate;
         //The format is worked out by looking at the number of
         //channels and the bits per sample.
         if (wave_format.numChannels == 1) {
             if (wave_format.bitsPerSample == 8)
-                *format = AL_FORMAT_MONO8;
+                waveData->format = AL_FORMAT_MONO8;
             else if (wave_format.bitsPerSample == 16)
-                *format = AL_FORMAT_MONO16;
+                waveData->format = AL_FORMAT_MONO16;
         }
         else if (wave_format.numChannels == 2) {
             if (wave_format.bitsPerSample == 8)
-                *format = AL_FORMAT_STEREO8;
+                waveData->format = AL_FORMAT_STEREO8;
             else if (wave_format.bitsPerSample == 16)
-                *format = AL_FORMAT_STEREO16;
+                waveData->format = AL_FORMAT_STEREO16;
         }
 
         //errorCheck();
         //now we put our data into the openAL buffer and
         //check for success
 
-        alBufferData(*buffer, *format, (void*)data,
-            *size, *frequency);
+        alBufferData(waveData->bufferID, waveData->format, (void*)data,
+            waveData->size2, waveData->freq);
         delete[] data;
         if (alGetError() != AL_NO_ERROR)
         {
@@ -546,7 +551,7 @@ bool loadWavFile(const string filename, ALuint* buffer, ALsizei* size, ALsizei* 
     }
     catch (std::string error) {
         //our catch statement for if we throw a string
-        debugger_audio.writelog(1,"failed to load wave file:"+ filename +" " + error);
+        debugger_audio.writelog(1, "failed to load wave file: " + filename + " " + error);
 
         Sleep(100);
         //clean up memory if wave loading fails
@@ -573,11 +578,11 @@ unsigned __stdcall ThreadPlaySingleMusic(LPVOID lpParameter)
         t = alGetError();
         if (t != AL_NO_ERROR && t != AL_INVALID_NAME)    //bug?
         {
-            debugger_audio.writelog(1,ALogg[current_playing_music_s].name + " alGenSources error in load ogg!  " + to_string(t));
+            debugger_audio.writelog(1,ALogg[current_playing_music_s].fileName + " alGenSources error in load ogg!  " + to_string(t));
 
         }
 
-        if (!LoadOGG(ALogg[current_playing_music_s].name.c_str(), &ALogg[current_playing_music_s].bufferID, &ALogg[current_playing_music_s].freq, &ALogg[current_playing_music_s].format, &ALogg[current_playing_music_s].size2))
+        if (!LoadOGG(ALogg[current_playing_music_s].fileName.c_str(), &ALogg[current_playing_music_s].bufferID, &ALogg[current_playing_music_s].freq, &ALogg[current_playing_music_s].format, &ALogg[current_playing_music_s].size2))
         {
             debugger_audio.writelog(1,"load oggfile failed");
             alDeleteSources(1, &ALogg[current_playing_music_s].sourceID);
@@ -589,7 +594,7 @@ unsigned __stdcall ThreadPlaySingleMusic(LPVOID lpParameter)
         t = alGetError();
         if (t != AL_NO_ERROR)
         {
-            debugger_audio.writelog(1,"error in ThreadPlaySingleMusic!  " + to_string(t) + " " + ALogg[current_playing_music_s].name);
+            debugger_audio.writelog(1,"error in ThreadPlaySingleMusic!  " + to_string(t) + " " + ALogg[current_playing_music_s].fileName);
             alDeleteSources(1, &ALogg[current_playing_music_s].sourceID);
             alDeleteBuffers(1, &ALogg[current_playing_music_s].bufferID);
             Sleep(1000);
@@ -762,8 +767,8 @@ unsigned __stdcall ThreadPlayMusic(LPVOID lpParameter)
 
     debugger_audio.writelog(0,"found " + to_string(musicnum1+ musicnum2) + " external music file.");
     
-    ALogg[1].name = sys[1].name;
-    ALogg[2].name = sys[2].name;
+    ALogg[1].fileName = sys[1].name;
+    ALogg[2].fileName = sys[2].name;
 
 
     int curnum = 1;
@@ -773,10 +778,10 @@ unsigned __stdcall ThreadPlayMusic(LPVOID lpParameter)
     {
         for (int i = 0; i < musicnum1; i++)
         {
-            ALogg[3 + i].name = stage1[i].name;
+            ALogg[3 + i].fileName = stage1[i].name;
         }
         mainpagemusic = rand() % musicnum1 + 3;
-        sys[3].name = ALogg[mainpagemusic].name;
+        sys[3].name = ALogg[mainpagemusic].fileName;
         //writelog(ALogg[mainpagemusic].name);
     }
     else
@@ -789,7 +794,7 @@ unsigned __stdcall ThreadPlayMusic(LPVOID lpParameter)
     
     
     
-    g_am.Init();
+    
 
     int oggnum = 1;
 
@@ -811,13 +816,8 @@ unsigned __stdcall ThreadPlayMusic(LPVOID lpParameter)
             return 0;
         }
     }
-
+    g_am.Init();
     alDistanceModel(AL_INVERSE_DISTANCE);
-
-    g_am.LoadWavFromFiles();
-
-    
- 
 
     int current_playing_wav = 0;
     //bool dbg_wav_wait = 0;
@@ -868,14 +868,19 @@ unsigned __stdcall ThreadPlayMusic(LPVOID lpParameter)
         {
             
             g_am.thread_smusic_response = -1;
-            g_am.Cleanup();
+            
+            //g_am.Cleanup();
             return 0;
         }
 
  
         if (g_am.thread_Audio_volume_changed)
         {
-            g_am.ApplySEVolumeChange();
+            unordered_map<string, shared_ptr<SE_INFO>> audioMap = g_rm.getAudioMap();
+            for (auto i : audioMap)
+            {
+                g_am.ApplySEVolumeChange(i.second);
+            }
         }
 
         g_am.updateSE();

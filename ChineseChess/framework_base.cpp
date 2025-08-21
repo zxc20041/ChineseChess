@@ -349,40 +349,87 @@ ResourceManager::~ResourceManager()
     }
 }
 
-void ResourceManager::AddResource(string aliasName, string filePath, ResourceType type, string md5, TEXTURE_DESC texture_desc, FONT_DESC font_desc, TEXT_DESC text_desc, void* func)
+
+void ResourceManager::AddResource(string aliasName, string filePath, string md5, TEXTURE_DESC texture_desc)
 {
     while (releaseAllSignal.load() == SINGLE_LOADING);
 
     for (int i = 0; i < res_num; i++)
     {
-        if (res_info[i]->aliasName == aliasName&& type!= ResourceType::Resource_Font)
+        if (res_info[i]->aliasName == aliasName)
         {
-            debugger_main.writelog(1, "Repeated resource aliasName: " + aliasName);
+            debugger_main.writelog(DWARNNING, "Repeated resource aliasName: " + aliasName);
             return;
         }
     }
-    res_info[res_num] = new RESOURCE_INFO(aliasName, filePath, type, md5, texture_desc, font_desc, text_desc, func);
-    res_num++;
-    
-    //prepare res
-    if (type == ResourceType::Resource_Texture)
-    {
 
-    }
-    else if (type == ResourceType::Resource_Font)
+    res_info[res_num] = new RESOURCE_INFO(aliasName, filePath, ResourceType::Resource_Texture, md5, texture_desc, FONT_DESC(), TEXT_DESC(), AUDIO_DESC());
+    res_num++;
+    return;
+}
+
+void ResourceManager::AddResource(string aliasName, string filePath, string md5, FONT_DESC font_desc)
+{
+    while (releaseAllSignal.load() == SINGLE_LOADING);
+
+    for (int i = 0; i < res_num; i++)
     {
-        int font_num = 0;
-        font_num = AddFontResourceA(filePath.c_str());  //添加字体文件
-        //判断字体文件是否可用
-        if (font_num <= 0)
+        if (res_info[i]->aliasName == aliasName)
         {
-            debugger_main.writelog(DWARNNING, "Load Font Resource failed! " + filePath, __LINE__);
+            debugger_main.writelog(DWARNNING, "Repeated resource aliasName: " + aliasName);
+            return;
         }
     }
-    else if (type == ResourceType::Resource_Text)
-    {
 
+    int font_num = 0;
+    font_num = AddFontResourceA(filePath.c_str());  //添加字体文件
+    //判断字体文件是否可用
+    if (font_num <= 0)
+    {
+        debugger_main.writelog(DWARNNING, "Load Font Resource failed! " + filePath, __LINE__);
     }
+
+    res_info[res_num] = new RESOURCE_INFO(aliasName, filePath, ResourceType::Resource_Font, md5, TEXTURE_DESC(), font_desc, TEXT_DESC(), AUDIO_DESC());
+    res_num++;
+
+    return;
+}
+
+void ResourceManager::AddResource(string aliasName, string filePath, string md5, TEXT_DESC text_desc)
+{
+    while (releaseAllSignal.load() == SINGLE_LOADING);
+
+    for (int i = 0; i < res_num; i++)
+    {
+        if (res_info[i]->aliasName == aliasName)
+        {
+            debugger_main.writelog(DWARNNING, "Repeated resource aliasName: " + aliasName);
+            return;
+        }
+    }
+
+    res_info[res_num] = new RESOURCE_INFO(aliasName, filePath, ResourceType::Resource_Font, md5, TEXTURE_DESC(), FONT_DESC(), text_desc, AUDIO_DESC());
+    res_num++;
+
+    return;
+}
+
+void ResourceManager::AddResource(string aliasName, string filePath, string md5, AUDIO_DESC audio_desc)
+{
+    while (releaseAllSignal.load() == SINGLE_LOADING);
+
+    for (int i = 0; i < res_num; i++)
+    {
+        if (res_info[i]->aliasName == aliasName)
+        {
+            debugger_main.writelog(DWARNNING, "Repeated resource aliasName: " + aliasName);
+            return;
+        }
+    }
+
+    res_info[res_num] = new RESOURCE_INFO(aliasName, filePath, ResourceType::Resource_Font, md5, TEXTURE_DESC(), FONT_DESC(), TEXT_DESC(), audio_desc);
+    res_num++;
+
     return;
 }
 
@@ -409,10 +456,6 @@ bool ResourceManager::GetFinishLoading()
     return loadAllSignal.load() == 0;
 }
 
-void ResourceManager::AddThread(string aliasName, void* func)
-{
-    AddResource(aliasName, "", ResourceType::Resource_Handle, "", TEXTURE_DESC(), FONT_DESC(), TEXT_DESC(), func);
-}
 
 ID2D1Bitmap* ResourceManager::getTexture(string aliasName)
 {
@@ -438,14 +481,14 @@ ID2D1BitmapBrush1* ResourceManager::getBrush(string aliasName)
     return brushMap[aliasName];
 }
 
-int ResourceManager::getAudioIndex(string aliasName)
+shared_ptr<SE_INFO> ResourceManager::getAudio(string aliasName)
 {
     static int notFoundNum = 0;
     if (audioMap.find(aliasName) == audioMap.end() && notFoundNum < 3)
     {
         notFoundNum++;
         debugger_main.writelog(DWARNNING, "res not found in ResourceManager::getAudioIndex() " + aliasName);
-        return 0;
+        return nullptr;
     }
     return audioMap[aliasName];
 }
@@ -484,6 +527,11 @@ TEXT_RESOURCE* ResourceManager::getText(string aliasName)
     return textMap[aliasName];
 }
 
+unordered_map<string, shared_ptr<SE_INFO>>& ResourceManager::getAudioMap()
+{
+    return audioMap;
+}
+
 void ResourceManager::setFontIndex(string aliasName, int index)
 {
     fontIndexMap[aliasName] = index;
@@ -517,9 +565,113 @@ bool ResourceManager::md5_verify_implementation(string filename, string md5)
     return md5_verify(filename.c_str(), md5.c_str());
 }
 
+bool ResourceManager::LoadTexture(RESOURCE_INFO* res_desc)
+{
+    ID2D1Bitmap* pBitmap = nullptr;
+    IWICBitmapSource* pWicBitmap = nullptr;
+    HRESULT hr = LoadBitmapFromFile(pIWICFactory, stringToLPCWSTR(res_desc->filePath), res_desc->textureDesc.width, res_desc->textureDesc.height, &pBitmap, res_desc->textureDesc.save_WicBitmapSource ? &pWicBitmap : nullptr);
+    if (hr != S_OK || pBitmap == nullptr)
+    {
+        debugger_main.writelog(DWARNNING, "Load Bitmap From File failed!  " + res_desc->filePath, __LINE__);
+        return 0;
+    }
+
+    if (res_desc->textureDesc.save_WicBitmapSource)
+    {
+        if (pWicBitmap == nullptr)
+        {
+            debugger_main.writelog(DWARNNING, "Load IWICBitmapSource From File failed!  " + res_desc->filePath, __LINE__);
+            return 0;
+        }
+        WICtextureMap[res_desc->aliasName] = pWicBitmap;
+    }
+    if (res_desc->textureDesc.save_Brush)
+    {
+        D2D1_BITMAP_BRUSH_PROPERTIES1 BITMAP_BRUSH_PROPERTY1;
+        BITMAP_BRUSH_PROPERTY1.extendModeX = D2D1_EXTEND_MODE_MIRROR;
+        BITMAP_BRUSH_PROPERTY1.extendModeY = D2D1_EXTEND_MODE_MIRROR;
+        if (set2[0].MSAA == 2)
+        {
+            BITMAP_BRUSH_PROPERTY1.interpolationMode = D2D1_INTERPOLATION_MODE_ANISOTROPIC;
+        }
+        else if (set2[0].MSAA == 1)
+        {
+            BITMAP_BRUSH_PROPERTY1.interpolationMode = D2D1_INTERPOLATION_MODE_LINEAR;
+        }
+        else
+        {
+            BITMAP_BRUSH_PROPERTY1.interpolationMode = D2D1_INTERPOLATION_MODE_NEAREST_NEIGHBOR;
+        }
+        ID2D1BitmapBrush1* g_pBitmapBrush = nullptr;
+        hr = g_pD2DDeviceContext->CreateBitmapBrush(pBitmap, BITMAP_BRUSH_PROPERTY1, &g_pBitmapBrush);
+        if (hr != S_OK || g_pBitmapBrush == nullptr)
+        {
+            debugger_main.writelog(DWARNNING, "CreateBitmapBrush From File failed!  " + res_desc->filePath, __LINE__);
+            return 0;
+        }
+        brushMap[res_desc->aliasName] = g_pBitmapBrush;
+    }
+    if (!res_desc->textureDesc.save_Bitmap)
+    {
+        pBitmap->Release();
+    }
+    else
+    {
+        textureMap[res_desc->aliasName] = pBitmap;
+    }
+    return 1;
+}
+
+bool ResourceManager::LoadFont(RESOURCE_INFO* res_desc)
+{
+    IDWriteTextFormat* textFormat = nullptr;
+
+    HRESULT hr = g_pDWriteFactory->CreateTextFormat(
+        stringToLPCWSTR(res_desc->fontDesc.FontFamilyName),
+        NULL,
+        DWRITE_FONT_WEIGHT_REGULAR,
+        DWRITE_FONT_STYLE_NORMAL,
+        DWRITE_FONT_STRETCH_NORMAL,
+        to_screen(res_desc->fontDesc.fontSize),
+        L"en-us",
+        &textFormat
+    );
+
+    if (hr != S_OK || textFormat == nullptr)
+    {
+        debugger_main.writelog(DWARNNING, "CreateTextFormat failed!  " + res_desc->filePath, __LINE__);
+        return 0;
+    }
+
+    fontMap[res_desc->aliasName] = textFormat;
+    return 1;
+}
+
+bool ResourceManager::LoadText(RESOURCE_INFO* res_desc)
+{
+    string* readbuf = new string[res_desc->textDesc.lines_max];
+    int lines = ReadFile_1(res_desc->filePath.c_str(), readbuf, res_desc->textDesc.lines_max);
+    if (lines <= 0)
+    {
+        debugger_main.writelog(DWARNNING, "Read text res failed!  " + res_desc->filePath, __LINE__);
+        return 0;
+    }
+    TEXT_RESOURCE* text = new TEXT_RESOURCE();
+    text->lines = lines;
+    text->content = readbuf;
+    textMap[res_desc->aliasName] = text;
+    return 1;
+}
+
+bool ResourceManager::LoadAudio(RESOURCE_INFO* res_desc)
+{
+
+    return false;
+}
+
 bool ResourceManager::LoadAll_implementation()
 {
-    debugger_main.writelog(DDEBUG, "IN ResourceManager::LoadAll_implementation()", __LINE__);
+    debugger_main.writelog(DDEBUG, "in ResourceManager::LoadAll_implementation()", __LINE__);
     for (auto& i : res_info)
     {
         if (i == nullptr)
@@ -530,115 +682,34 @@ bool ResourceManager::LoadAll_implementation()
         {
             continue;
         }
-        if (i->type == ResourceType::Resource_Handle)
-        {
-            HANDLE newHandle = (HANDLE)_beginthreadex(NULL, 0, (_beginthreadex_proc_type)i->funcAddr, NULL, 0, NULL);
-            if (newHandle == 0)
-            {
-                debugger_main.writelog(DWARNNING, "_beginthreadex failed!  " + i->aliasName, __LINE__);
-                return 0;
-            }
-            handleMap[i->aliasName] = newHandle;
-            i->loaded = 1;
-            continue;
-        }
+        
         if (!verifyFile(i))
         {
-            debugger_main.writelog(DWARNNING, "verifyFile failed: " + i->filePath, __LINE__);
+            debugger_main.writelog(DWARNNING, "verify File failed: " + i->filePath, __LINE__);
 
             return 0;
         }
-        if (i->type == ResourceType::Resource_Texture)
+        bool success = 0;
+        switch (i->type)
         {
-            ID2D1Bitmap* pBitmap = nullptr;
-            IWICBitmapSource* pWicBitmap = nullptr;
-            HRESULT hr = LoadBitmapFromFile(pIWICFactory, stringToLPCWSTR(i->filePath), i->textureDesc.width, i->textureDesc.height, &pBitmap, i->textureDesc.save_WicBitmapSource ? &pWicBitmap : nullptr);
-            if (hr != S_OK || pBitmap == nullptr)
-            {
-                debugger_main.writelog(DWARNNING, "Load Bitmap From File failed!  " + i->filePath, __LINE__);
-                return 0;
-            }
-            
-            if (i->textureDesc.save_WicBitmapSource)
-            {
-                if (pWicBitmap == nullptr)
-                {
-                    debugger_main.writelog(DWARNNING, "Load IWICBitmapSource From File failed!  " + i->filePath, __LINE__);
-                    return 0;
-                }
-                WICtextureMap[i->aliasName] = pWicBitmap;
-            }
-            if (i->textureDesc.save_Brush)
-            {
-                D2D1_BITMAP_BRUSH_PROPERTIES1 BITMAP_BRUSH_PROPERTY1;
-                BITMAP_BRUSH_PROPERTY1.extendModeX = D2D1_EXTEND_MODE_MIRROR;
-                BITMAP_BRUSH_PROPERTY1.extendModeY = D2D1_EXTEND_MODE_MIRROR;
-                if (set2[0].MSAA == 2)
-                {
-                    BITMAP_BRUSH_PROPERTY1.interpolationMode = D2D1_INTERPOLATION_MODE_ANISOTROPIC;
-                }
-                else if (set2[0].MSAA == 1)
-                {
-                    BITMAP_BRUSH_PROPERTY1.interpolationMode = D2D1_INTERPOLATION_MODE_LINEAR;
-                }
-                else
-                {
-                    BITMAP_BRUSH_PROPERTY1.interpolationMode = D2D1_INTERPOLATION_MODE_NEAREST_NEIGHBOR;
-                }
-                ID2D1BitmapBrush1* g_pBitmapBrush = nullptr;
-                hr = g_pD2DDeviceContext->CreateBitmapBrush(pBitmap, BITMAP_BRUSH_PROPERTY1, &g_pBitmapBrush);
-                if (hr != S_OK || g_pBitmapBrush == nullptr)
-                {
-                    debugger_main.writelog(DWARNNING, "CreateBitmapBrush From File failed!  " + i->filePath, __LINE__);
-                    return 0;
-                }
-                brushMap[i->aliasName] = g_pBitmapBrush;
-            }
-            if (!i->textureDesc.save_Bitmap)
-            {
-                pBitmap->Release();
-            }
-            else
-            {
-                textureMap[i->aliasName] = pBitmap;
-            }
+        case ResourceType::Resource_Texture:
+            success = LoadTexture(i);
+            break;
+        case ResourceType::Resource_Font:
+            success = LoadFont(i);
+            break;
+        case ResourceType::Resource_Text:
+            success = LoadText(i);
+            break;
+        case ResourceType::Resource_Audio:
+            success = LoadAudio(i);
+            break;
+        default:
+            break;
         }
-        else if (i->type == ResourceType::Resource_Font)
+        if (!success)
         {
-            IDWriteTextFormat* textFormat = nullptr;
-
-            HRESULT hr = g_pDWriteFactory->CreateTextFormat(
-                stringToLPCWSTR(i->fontDesc.FontFamilyName),
-                NULL,
-                DWRITE_FONT_WEIGHT_REGULAR,
-                DWRITE_FONT_STYLE_NORMAL,
-                DWRITE_FONT_STRETCH_NORMAL,
-                to_screen(i->fontDesc.fontSize),
-                L"en-us",
-                &textFormat
-            );
-
-            if (hr != S_OK || textFormat == nullptr)
-            {
-                debugger_main.writelog(DWARNNING, "CreateTextFormat failed!  " + i->filePath, __LINE__);
-                return 0;
-            }
-
-            fontMap[i->aliasName] = textFormat;
-        }
-        else if (i->type == ResourceType::Resource_Text)
-        {
-            string *readbuf = new string[i->textDesc.lines_max];
-            int lines = ReadFile_1(i->filePath.c_str(), readbuf, i->textDesc.lines_max);
-            if (lines <= 0)
-            {
-                debugger_main.writelog(DWARNNING, "Read text res failed!  " + i->filePath, __LINE__);
-                return 0;
-            }
-            TEXT_RESOURCE* text = new TEXT_RESOURCE();
-            text->lines = lines;
-            text->content = readbuf;
-            textMap[i->aliasName] = text;
+            return 0;
         }
         i->loaded = 1;
     }
@@ -653,7 +724,7 @@ bool ResourceManager::LoadAll_implementation()
         delete i;
         i = nullptr;
     }
-    debugger_main.writelog(DDEBUG, "finishing ResourceManager::LoadAll_implementation() "+to_string(loaded_cnt), __LINE__);
+    debugger_main.writelog(DDEBUG, "successfully finish ResourceManager::LoadAll_implementation() " + to_string(loaded_cnt), __LINE__);
     return 1;
 }
 
@@ -782,7 +853,7 @@ void Box::check(int isButton)
             click_status = 1;
             if (isButton)
             {
-                g_am.playEffectSound(1);
+                g_am.PlayEffectSound("button1");
             }
             
         }
@@ -793,7 +864,7 @@ void Box::check(int isButton)
 
             if (isButton)
             {
-                g_am.playEffectSound(2);
+                g_am.PlayEffectSound("button2");
             }
 
 

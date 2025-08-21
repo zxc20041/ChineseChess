@@ -94,13 +94,13 @@ bool LocalGamePVE_Page::EnterPage()
 			return;
 		});
 	
-	TEXTURE_DESC brush_only{ 0,0,0,0,1 };
-	g_rm.AddResource("bg board", ".\\game\\pic\\board.jpg", ResourceManager::ResourceType::Resource_Texture, "DE601E07F5C7D8B8DDD81F521A458510", brush_only);
 
-	g_rm.AddResource("bg river", ".\\game\\pic\\bg_river.png", ResourceManager::ResourceType::Resource_Texture, "pass");
+	g_rm.AddResource("bg board", ".\\game\\pic\\board.jpg", "DE601E07F5C7D8B8DDD81F521A458510", RESOURCE_INFO::BRUSH_ONLY);
 
-	g_rm.AddResource("pieces", ".\\game\\pic\\pieces.png", ResourceManager::ResourceType::Resource_Texture, "pass");
-	g_rm.AddResource("pieces atlas info", ".\\game\\pic\\pieces.dat", ResourceManager::ResourceType::Resource_Text, "pass");
+	g_rm.AddResource("bg river", ".\\game\\pic\\bg_river.png", "pass", RESOURCE_INFO::DEFAULT_Bitmap);
+
+	g_rm.AddResource("pieces", ".\\game\\pic\\pieces.png", "pass", RESOURCE_INFO::DEFAULT_Bitmap);
+	g_rm.AddResource("pieces atlas info", ".\\game\\pic\\pieces.dat", "pass", RESOURCE_INFO::DEFAULT_TEXT);
 	g_rm.LoadAll();
 
 	g_cm.AddButton(returnButton);

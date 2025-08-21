@@ -7,7 +7,7 @@
 
 constexpr int SE_MAX = 256;
 constexpr int SE_AUDIO_NUM = 64;
-constexpr int SE_AUDIO_SOURCE_NUM = 7;
+constexpr int SE_AUDIO_SOURCE_NUM = 4;
 
 constexpr int BGM_INGAME = 1;
 constexpr int BGM_HOME = 2;
@@ -20,14 +20,15 @@ constexpr int BGM_HOME = 2;
 
 struct ALcoms
 {
-    string name = "";
-    bool loaded = 0;
+    string fileName;
+    
     ALint state = NULL;                            // The state of the sound source
     ALuint bufferID = NULL;                        // The OpenAL sound buffer ID
     ALuint sourceID = NULL;                        // The OpenAL sound source
     ALsizei size2 = NULL;                          // For wave format
     ALenum format = NULL;                          // The sound data format
     ALsizei freq = NULL;                           // The frequency of the sound data
+    bool loaded = 0;
     //vector<char> bufferData;                // The sound buffer data from file
 };
 
@@ -59,18 +60,21 @@ struct musicinfo
 };
 
 
-struct seinfo
+struct SE_INFO
 {
-    string filename = "";
-    ALcoms ALwav[SE_AUDIO_SOURCE_NUM];
+    vector<ALcoms> ALwav;
+    string aliasName;
+    string filename;
+    float loudnessOffset = 1.0f;
+    int source_num = 0;
 };
 
 struct SE_DESC
 {
-    int se_index;
-    bool sound_3d_position;
+    atomic<string> se_aliasName;
     float sound_positions[3];   //max 1,1 while z=0.5f
     float volumn;   //0-1
+    bool sound_3d_position;
 };
 
 
@@ -88,15 +92,17 @@ unsigned __stdcall ThreadPlayMusic(LPVOID lpParameter);
 class AudioManager
 {
 private:
-    seinfo se_p[SE_AUDIO_NUM];  //se sources
+    //SE_INFO se_p[SE_AUDIO_NUM];  //se sources
     SE_DESC se[SE_MAX]; //se requests
     int thread_Audio_target_music;
-    bool thread_Audio_volume_changed, thread_Audio_volume_changed_music, thread_Audio_switch_immediately, thread_Audio_quit_single;
     int current_playing_music, last_music_request;
     int thread_smusic_response, isloop;
     int audio_latency_update_count;
     weak_ptr<float> pAvgLatency;
     TIMER timer;
+    bool device_created;
+    bool thread_Audio_volume_changed, thread_Audio_volume_changed_music, thread_Audio_switch_immediately, thread_Audio_quit_single;
+    
     friend unsigned __stdcall ThreadPlayMusic(LPVOID lpParameter);
     friend unsigned __stdcall ThreadPlaySingleMusic(LPVOID lpParameter);
 
@@ -104,28 +110,26 @@ private:
     void Init();
 
     // Load the WAVE file into memory
-    void LoadWavFromFiles();
+    shared_ptr<SE_INFO> LoadWavFromFile(string aliasName, string filePath, AUDIO_DESC audio_desc);
 
     // Clean up sound buffer and source
-    void Cleanup();
+    void Cleanup(shared_ptr<SE_INFO> se_info);
 
-    void ApplySEVolumeChange();
+    void ApplySEVolumeChange(shared_ptr<SE_INFO> se_info);
 
     //play se in SE_DESC
     void updateSE();
 public:
     AudioManager();
+    ~AudioManager();
     
-    //bool getLoop();
     //播放音效
-    void playEffectSound(int num, float volumn=1.0f);
-
-    //void playEffectSound(int num, float x, float y, float z,float volumn);
+    void PlayEffectSound(const string aliasName, const float volumn = 1.0f);
 
     //播放指定空间位置的音效
-    void playEffectSound(int num, float x, float y, float z, float volumn=1.0f);
+    void PlayEffectSound(string aliasName, float x, float y, float z, float volumn = 1.0f);
 
-    void PlayBGM(int music_index, bool immediate,bool loop);
+    void PlayBGM(int music_index, bool immediate, bool loop);
 
     void PlayMusicGroup(int group);
 
@@ -134,6 +138,8 @@ public:
     void setSEVolume(int volume);
 
     void GetAudioLatency(weak_ptr<float> avgLatency);
+
+    ALuint LoadWavFromFile(std::string fileName, float loudnessOffset = 1.0f);
 };
 
 extern AudioManager g_am;

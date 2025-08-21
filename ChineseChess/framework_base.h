@@ -7,11 +7,11 @@
 #include <Windows.h>
 #include <imm.h>  
 #include <unordered_map>
-#include<conio.h>
+#include <conio.h>
 #include <io.h>
 #include <shlobj_core.h>
 #include <process.h>
-#include<array>
+#include <array>
 #include <vector>
 #include <fstream>
 #include <d3d11.h>
@@ -20,7 +20,7 @@
 #include <dxgi1_6.h>
 #include <dwrite.h>
 #include <wincodec.h>
-#include<dinput.h>
+#include <dinput.h>
 
 #include <openssl/md5.h>
 
@@ -376,6 +376,18 @@ struct TEXT_DESC
     bool separatedByLines = 1;
 };
 
+struct AUDIO_DESC
+{
+    enum class AUDIO_TYPE
+    {
+        AUDIO_TYPE_OGG,
+        AUDIO_TYPE_WAV
+    };
+    float loudnessOffset = 1.0f;
+    AUDIO_TYPE type = AUDIO_TYPE::AUDIO_TYPE_WAV;
+    int se_source_num = 4;
+};
+
 struct RESOURCE_INFO;
 
 class ResourceManager
@@ -386,29 +398,33 @@ public:
     constexpr static int SINGLE_FAILED = -1;
     enum class ResourceType
     {
-        Resource_Texture = 0,
-        Resource_Audio = 1,
-        Resource_Font = 2,
-        Resource_Text = 3,
-        Resource_Handle = 4
+        Resource_Texture,
+        Resource_Audio,
+        Resource_Font,
+        Resource_Text,
+        //Resource_Handle
     };
     ResourceManager();
     ~ResourceManager();
-    void AddResource(string aliasName, string filePath, ResourceType type, string md5, TEXTURE_DESC texture_desc = TEXTURE_DESC(), FONT_DESC font_desc = FONT_DESC(), TEXT_DESC text_desc= TEXT_DESC(),void*func=0);
-
+    
+    void AddResource(string aliasName, string filePath, string md5, TEXTURE_DESC texture_desc);
+    void AddResource(string aliasName, string filePath, string md5, FONT_DESC font_desc);
+    void AddResource(string aliasName, string filePath, string md5, TEXT_DESC text_desc);
+    void AddResource(string aliasName, string filePath, string md5, AUDIO_DESC audio_desc);
+    
     void LoadAll(); //async
-    void ReleaseAll();
+    void ReleaseAll(); //async
     void FinishLoading();   //sync
     bool GetFinishLoading();    //async
-    void AddThread(string aliasName, void* func);
 
 
     ID2D1Bitmap* getTexture(string aliasName);
     ID2D1BitmapBrush1* getBrush(string aliasName);
-    int getAudioIndex(string aliasName);
+    shared_ptr<SE_INFO> getAudio(string aliasName);
     IDWriteTextFormat* getFont(string aliasName);
     int getFontIndex(string aliasName);
     TEXT_RESOURCE* getText(string aliasName);
+    unordered_map<string, shared_ptr<SE_INFO>>& getAudioMap();
     void setFontIndex(string aliasName, int index);
     void setFont(string aliasName, IDWriteTextFormat* font);
 
@@ -427,11 +443,10 @@ private:
     unordered_map<string, ID2D1Bitmap*> textureMap;
     unordered_map<string, IWICBitmapSource*> WICtextureMap;
     unordered_map<string, ID2D1BitmapBrush1*> brushMap;
-    unordered_map<string, int> audioMap;
+    unordered_map<string, shared_ptr<SE_INFO>> audioMap;
     unordered_map<string, IDWriteTextFormat*> fontMap;
     unordered_map<string, int> fontIndexMap;
     unordered_map<string, TEXT_RESOURCE*> textMap;
-    unordered_map<string, HANDLE> handleMap;
 
     TEXT_RESOURCE* texts[TEXT_MAX];
 
@@ -446,9 +461,11 @@ private:
     bool verifyFile(RESOURCE_INFO* res);
     bool md5_verify_implementation(string filename, string md5);
     
+    bool LoadTexture(RESOURCE_INFO* res_desc);
+    bool LoadFont(RESOURCE_INFO* res_desc);
+    bool LoadText(RESOURCE_INFO* res_desc);
+    bool LoadAudio(RESOURCE_INFO* res_desc);
     
-    
-    //todo: add text resolver
 };
 
 extern ResourceManager g_rm;
@@ -457,23 +474,40 @@ struct RESOURCE_INFO
 {
     string aliasName;
     string filePath;
-    ResourceManager::ResourceType type;
     string md5;
     FONT_DESC fontDesc;
     TEXTURE_DESC textureDesc;
     TEXT_DESC textDesc;
-    void* funcAddr;
+    AUDIO_DESC audioDesc;
+    ResourceManager::ResourceType type;
     bool loaded;
-    RESOURCE_INFO(string name, string path, ResourceManager::ResourceType type, string md5hash, TEXTURE_DESC texture_desc, FONT_DESC font_desc, TEXT_DESC text_desc, void* func=0)
+    
+    
+    RESOURCE_INFO(string name, string path, ResourceManager::ResourceType type, string md5hash, TEXTURE_DESC texture_desc, FONT_DESC font_desc, TEXT_DESC text_desc, AUDIO_DESC audio_desc)
     {
         aliasName = name, filePath = path, this->type = type, md5 = md5hash, loaded = 0;
         fontDesc = font_desc;
         textureDesc = texture_desc;
         textDesc = text_desc;
-        funcAddr = func;
     }
-    constexpr static TEXTURE_DESC DEFAULT_Bitmap_WicBitmap = { 0, 0, 1 };
-    constexpr static TEXTURE_DESC DEFAULT_Bitmap = { 0,0,0 };
+    /*RESOURCE_INFO(string name, string path, string md5hash, TEXTURE_DESC texture_desc) :RESOURCE_INFO(name, path, ResourceManager::ResourceType::Resource_Texture, md5hash, texture_desc, FONT_DESC(), TEXT_DESC(), AUDIO_DESC(), nullptr)
+    {
+    }
+    RESOURCE_INFO(string name, string path, string md5hash, FONT_DESC font_desc) :RESOURCE_INFO(name, path, ResourceManager::ResourceType::Resource_Font, md5hash, TEXTURE_DESC(), font_desc, TEXT_DESC(), AUDIO_DESC(), nullptr)
+    {
+    }
+    RESOURCE_INFO(string name, string path, string md5hash, TEXT_DESC text_desc) :RESOURCE_INFO(name, path, ResourceManager::ResourceType::Resource_Text, md5hash, TEXTURE_DESC(), FONT_DESC(), text_desc, AUDIO_DESC(), nullptr)
+    {
+    }
+    RESOURCE_INFO(string name, string path, string md5hash, AUDIO_DESC audio_desc) :RESOURCE_INFO(name, path, ResourceManager::ResourceType::Resource_Audio, md5hash, TEXTURE_DESC(), FONT_DESC(), TEXT_DESC(), audio_desc, nullptr)
+    {
+    }*/
+    constexpr static TEXTURE_DESC Bitmap_WicBitmap = { 0,0,1,1,0 };
+    constexpr static TEXTURE_DESC DEFAULT_Bitmap = { 0,0,1,0,0 };
+    constexpr static TEXTURE_DESC BRUSH_ONLY = { 0,0,0,0,1 };
+    constexpr static TEXT_DESC DEFAULT_TEXT = TEXT_DESC();
+    constexpr static AUDIO_DESC DEFAULT_WAVE = AUDIO_DESC();
+    constexpr static AUDIO_DESC DEFAULT_OGG = { 1.0f,AUDIO_DESC::AUDIO_TYPE::AUDIO_TYPE_OGG };
 };
 
 
