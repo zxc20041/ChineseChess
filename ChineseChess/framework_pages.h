@@ -134,7 +134,7 @@ private:
     shared_ptr<LABEL> inputLabel;
     string input_username = "defaultUser";
     float enter_notice_time = 0;
-
+    int page_status;
     //after clicking okButton
     void Update2(); 
 };
@@ -146,6 +146,7 @@ public:
     VERIFY_FAILED_PAGE();
 
     void Rend() override;
+    bool EnterPage() override;
 
     constexpr static int PAGE_INDEX = PAGE_VERIFY_FAILED;
 private:

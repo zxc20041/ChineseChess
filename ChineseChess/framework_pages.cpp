@@ -1129,7 +1129,7 @@ void Setting_Page::rend_circles_BG(int refresh)
 
 New_User_Page::New_User_Page() :PAGE(PAGE_INDEX, PAGE_CREATED_STATUS, Effect::EFF_NONE, 0, "Register Page")
 {
-
+    page_status = 0;
 }
 
 New_User_Page::~New_User_Page()
@@ -1170,7 +1170,7 @@ void New_User_Page::Update()
     {
         if (okButton->getClicked())
         {
-            g_am.playEffectSound(9);
+            g_am.PlayEffectSound("pass");
             okButton->setText("loading...");
             okButton->setBrush3(g_pBrushYellow);
             usernameC = input_username;
@@ -1224,13 +1224,15 @@ void New_User_Page::Rend()
 bool New_User_Page::EnterPage()
 {
     PAGE::EnterPage();
-
+    page_status = 0;
+    g_rm.AddResource("pass", ".\\sounds\\pass.wav", "pass", RESOURCE_INFO::DEFAULT_WAVE);
+    g_rm.AddResource("tick", ".\\sounds\\tick.wav", "pass", RESOURCE_INFO::DEFAULT_WAVE);
     g_rm.LoadAll();
 
     g_cm.AddButton(okButton);
     g_cm.AddLabel(inputLabel);
     okButton->setClicked();
-    g_am.playEffectSound(10);
+    //g_am.PlayEffectSound("tick");
     return 1;
 }
 
@@ -1271,6 +1273,13 @@ void VERIFY_FAILED_PAGE::Rend()
         normal_quit = 1;
     }
     return;
+}
+
+bool VERIFY_FAILED_PAGE::EnterPage()
+{
+    PAGE::EnterPage();
+    g_rm.LoadAll();
+    return 1;
 }
 
 bool VERIFY_FAILED_PAGE::ExitPage()

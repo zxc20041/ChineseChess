@@ -21,8 +21,8 @@
 #include <dwrite.h>
 #include <wincodec.h>
 #include <dinput.h>
-
 #include <openssl/md5.h>
+#include"audio_base.h"
 
 
 //布局源分辨率1600x900
@@ -76,10 +76,7 @@ extern string usernameC;
 
 //md5资源校验结果
 extern int md5_result;
-//页面序号
-extern int page_index;
-//页面状态
-extern int page_status;
+
 //重启信号
 extern bool self_restarted;
 
@@ -104,7 +101,6 @@ extern float frmtm;
 //渲染比率
 extern float scale;
 
-extern int tip_used_num;
 
 struct Resource
 {
@@ -114,8 +110,6 @@ struct Resource
 };
 extern Resource res[128];
 
-
-extern string tips[16];
 
 extern HWND hWnd, FocusWindow;
 
@@ -482,26 +476,11 @@ struct RESOURCE_INFO
     ResourceManager::ResourceType type;
     bool loaded;
     
-    
     RESOURCE_INFO(string name, string path, ResourceManager::ResourceType type, string md5hash, TEXTURE_DESC texture_desc, FONT_DESC font_desc, TEXT_DESC text_desc, AUDIO_DESC audio_desc)
     {
         aliasName = name, filePath = path, this->type = type, md5 = md5hash, loaded = 0;
-        fontDesc = font_desc;
-        textureDesc = texture_desc;
-        textDesc = text_desc;
+        fontDesc = font_desc, textureDesc = texture_desc, textDesc = text_desc, audioDesc = audio_desc;
     }
-    /*RESOURCE_INFO(string name, string path, string md5hash, TEXTURE_DESC texture_desc) :RESOURCE_INFO(name, path, ResourceManager::ResourceType::Resource_Texture, md5hash, texture_desc, FONT_DESC(), TEXT_DESC(), AUDIO_DESC(), nullptr)
-    {
-    }
-    RESOURCE_INFO(string name, string path, string md5hash, FONT_DESC font_desc) :RESOURCE_INFO(name, path, ResourceManager::ResourceType::Resource_Font, md5hash, TEXTURE_DESC(), font_desc, TEXT_DESC(), AUDIO_DESC(), nullptr)
-    {
-    }
-    RESOURCE_INFO(string name, string path, string md5hash, TEXT_DESC text_desc) :RESOURCE_INFO(name, path, ResourceManager::ResourceType::Resource_Text, md5hash, TEXTURE_DESC(), FONT_DESC(), text_desc, AUDIO_DESC(), nullptr)
-    {
-    }
-    RESOURCE_INFO(string name, string path, string md5hash, AUDIO_DESC audio_desc) :RESOURCE_INFO(name, path, ResourceManager::ResourceType::Resource_Audio, md5hash, TEXTURE_DESC(), FONT_DESC(), TEXT_DESC(), audio_desc, nullptr)
-    {
-    }*/
     constexpr static TEXTURE_DESC Bitmap_WicBitmap = { 0,0,1,1,0 };
     constexpr static TEXTURE_DESC DEFAULT_Bitmap = { 0,0,1,0,0 };
     constexpr static TEXTURE_DESC BRUSH_ONLY = { 0,0,0,0,1 };
@@ -590,6 +569,7 @@ public:
     void SetInitalPage(PAGE* Page);
 
     string GetCurrentPageTag();
+    int GetCurrentPageIndex();
 private:
     constexpr static int PAGE_MAX = 128;
     bool switchingPage;
@@ -792,9 +772,6 @@ inline float to_screen(float ori)
 //文件读写线程
 unsigned __stdcall File_IO(LPVOID lpParameter);
 
-
-//载入tips文字
-void init_string();
 
 //初始化窗口,DirectX设备和内部资源
 void init_once();

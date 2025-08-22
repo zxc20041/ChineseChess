@@ -236,7 +236,7 @@ void render()
     g_cm.rend();
     rend_quit();
 
-    if (page_index < 1002 && set2[0].show_framerate)
+    if (g_PageManager.GetCurrentPageIndex() < 1002 && set2[0].show_framerate)
     {
         DrawTextA_1(to_string(fps) + " [" + to_string(DrawCallNum) + "]", g_pTextFormat, fpsRect, g_pBrushBlue);
 
@@ -294,7 +294,6 @@ unsigned __stdcall RenderLoop(LPVOID lpParameter)
         DestroyWindow(hWnd);
         return -1;
     }
-    page_index = 1000;
 
 
     while (1)

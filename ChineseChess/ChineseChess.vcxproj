@@ -150,6 +150,7 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="audio_base.h" />
     <ClInclude Include="audio_thread.h" />
     <ClInclude Include="cchess\CChessBase.h" />
     <ClInclude Include="cchess\CChessEngineAdapter.h" />

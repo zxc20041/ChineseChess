@@ -139,7 +139,7 @@ int ReadFile_1(const char* filename, string filebuf[],int max_num)
     }
     else
     {
-        g_am.playEffectSound(8);
+        g_am.PlayEffectSound("ioerror");
         g_cm.CreateEffect(301, 400, 50);
         string err = "ReadFile failed! ";
         err += filename;
@@ -155,7 +155,7 @@ bool WriteFile(const char* filename, string filebuf[], int max_num)
     int end = 0;
     if (!file.is_open())
     {
-        g_am.playEffectSound(8);
+        g_am.PlayEffectSound("ioerror");
         g_cm.CreateEffect(301, 400, 50);
         string err = "WriteFile Error! ";
         err += filename;
@@ -176,7 +176,7 @@ bool WriteFile(const char* filename, string filebuf[], int max_num)
         else
         {
             writelog("Possible file corruption: Discontinuous writebuf!");
-            g_am.playEffectSound(8);
+            g_am.PlayEffectSound("ioerror");
             writelog(filename);
             for (int j = 0; j < max_num; j++)
             {
@@ -603,7 +603,7 @@ void game_read_record()
 
     if (!file_private_verify(fullfilename))
     {
-        g_am.playEffectSound(6);
+        g_am.PlayEffectSound("alertTick");
         //writelog("cert file failed! "+ fullfilename);
         thread_IO_request_read_record = -1;
         return;
@@ -618,7 +618,7 @@ void game_read_record()
             {
                 if (readbuf[i + 1] != usernameC)
                 {
-                    g_am.playEffectSound(6);
+                    g_am.PlayEffectSound("alertTick");
                     g_cm.CreateEffect(302, 600, 50);
                     thread_IO_request_read_record = -1;
                     writelog("account info cert failed! (username) " + fullfilename);

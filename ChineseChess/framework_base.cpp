@@ -28,19 +28,18 @@ HIMC g_hIMC = NULL;
 string usernameC = "";  //default
 
 int md5_result = 0;
-int page_index = -1, page_status = 0;
+//int page_index = -1, page_status = 0;
 bool self_restarted = 0;
 int ed_stage = 0;
 bool long_credit = 1;
 
-int tip_used_num = 0;
 float frmtm = 0;    //frametime
 float scale = 1;    //rendering scale
 bool clicking = 0;
 bool rightclick = 0;
 
 const char* filename_dbg = "debug.log";
-string tips[16] = { "" };
+//string tips[16] = { "" };
 Resource res[128];
 
 Read_info record;
@@ -264,7 +263,7 @@ void debug_ex::writelog(int type, string content,int line)
                 break;
             case -1:
             case DERROR:
-                logbuf[i] += "[Error] (page_index="+to_string(page_index)+" page_status=" + to_string(page_status)+") ";
+                logbuf[i] += "[Error] (" + g_PageManager.GetCurrentPageTag() + ") ";
                 break;
             case DDEBUG:
                 logbuf[i] += "[Debug] (" + g_PageManager.GetCurrentPageTag() + ") ";
@@ -408,7 +407,7 @@ void ResourceManager::AddResource(string aliasName, string filePath, string md5,
         }
     }
 
-    res_info[res_num] = new RESOURCE_INFO(aliasName, filePath, ResourceType::Resource_Font, md5, TEXTURE_DESC(), FONT_DESC(), text_desc, AUDIO_DESC());
+    res_info[res_num] = new RESOURCE_INFO(aliasName, filePath, ResourceType::Resource_Text, md5, TEXTURE_DESC(), FONT_DESC(), text_desc, AUDIO_DESC());
     res_num++;
 
     return;
@@ -427,7 +426,7 @@ void ResourceManager::AddResource(string aliasName, string filePath, string md5,
         }
     }
 
-    res_info[res_num] = new RESOURCE_INFO(aliasName, filePath, ResourceType::Resource_Font, md5, TEXTURE_DESC(), FONT_DESC(), TEXT_DESC(), audio_desc);
+    res_info[res_num] = new RESOURCE_INFO(aliasName, filePath, ResourceType::Resource_Audio, md5, TEXTURE_DESC(), FONT_DESC(), TEXT_DESC(), audio_desc);
     res_num++;
 
     return;
@@ -487,9 +486,10 @@ shared_ptr<SE_INFO> ResourceManager::getAudio(string aliasName)
     if (audioMap.find(aliasName) == audioMap.end() && notFoundNum < 3)
     {
         notFoundNum++;
-        debugger_main.writelog(DWARNNING, "res not found in ResourceManager::getAudioIndex() " + aliasName);
+        debugger_main.writelog(DWARNNING, "res not found in ResourceManager::getAudio() " + aliasName);
         return nullptr;
     }
+    debugger_main.writelog(DDEBUG, "res found in ResourceManager::getAudio() " + aliasName);
     return audioMap[aliasName];
 }
 
@@ -624,6 +624,11 @@ bool ResourceManager::LoadTexture(RESOURCE_INFO* res_desc)
 
 bool ResourceManager::LoadFont(RESOURCE_INFO* res_desc)
 {
+    if (fontMap.find(res_desc->aliasName) != fontMap.end())
+    {
+        debugger_main.writelog(DDEBUG, "skip loading repeat font", __LINE__);
+        return 1;
+    }
     IDWriteTextFormat* textFormat = nullptr;
 
     HRESULT hr = g_pDWriteFactory->CreateTextFormat(
@@ -666,7 +671,14 @@ bool ResourceManager::LoadText(RESOURCE_INFO* res_desc)
 bool ResourceManager::LoadAudio(RESOURCE_INFO* res_desc)
 {
 
-    return false;
+    auto ptr = g_am.LoadWavFromFile(res_desc->aliasName, res_desc->filePath, res_desc->audioDesc);
+    if (ptr == nullptr)
+    {
+        debugger_main.writelog(DWARNNING, "LoadWavFromFile failed!  " + res_desc->filePath, __LINE__);
+        return 0;
+    }
+    audioMap[res_desc->aliasName] = ptr;
+    return 1;
 }
 
 bool ResourceManager::LoadAll_implementation()
@@ -705,6 +717,7 @@ bool ResourceManager::LoadAll_implementation()
             success = LoadAudio(i);
             break;
         default:
+            debugger_main.writelog(DWARNNING, "unknown res type in ResourceManager::LoadAll_implementation() ", __LINE__);
             break;
         }
         if (!success)
@@ -789,6 +802,17 @@ void ResourceManager::releaseAll_implementation()
         i.second = nullptr;
     }
     textMap.clear();
+
+    for (auto& i : audioMap)
+    {
+        if (i.second == nullptr)
+        {
+            continue;
+        }
+        g_am.Cleanup(i.second);
+        i.second = nullptr;
+    }
+    audioMap.clear();
 
     res_num = 0;
     return;
@@ -877,7 +901,7 @@ void Box::check(int isButton)
                 clicked_time = 0.3f;
             }
             doubleclick_status = !doubleclick_status;
-            if (page_index == 1)
+            if (g_PageManager.GetCurrentPageIndex() == PAGE_SETTING)
             {
                 thread_IO_request_save_config = 1;
             }
@@ -1857,7 +1881,7 @@ void Effect::update()
         }
         break;
     default:
-        debugger_main.writelog(1,"unexpected index in Effect::update()! index=" + to_string(index) + " page_index=" + to_string(page_index));
+        debugger_main.writelog(1,"unexpected index in Effect::update()! index=" + to_string(index) + " page=" + g_PageManager.GetCurrentPageTag());
         active = 0;
     }
     return;
@@ -2430,27 +2454,6 @@ bool AllisNum(string str)
 
 
 
-void init_string()
-{
-    tips[0] = "";
-    tips[1] = "";
-    tips[2] = "";
-    tips[3] = "";
-    tips[4] = "";
-    //tips[5] = "好友不在同一局域网下？安装附件中的Radmin_LAN以实现远程联机";
-    //tips[6] = "尽管存档是以明文形式保存的——在尝试修改存档前记得先备份";
-    tips[7] = "";
-    //tips[8] = "音频设置在线程模式2时延迟更低，代价是会占满整个线程";
-    //tips[9] = "阅读music文件夹下的readme.txt以了解如何使用你自己的bgm";
-    tips[10] = "";
-    tips[11] = "";
-    tips[12] = "";
-    tips[13] = "";
-    tips[14] = "";
-    return;
-}
-
-
 string getClipBoard()
 {
     if (OpenClipboard(NULL))//打开剪贴板  
@@ -2763,10 +2766,7 @@ void RebuildRenderContext()
         quit_single = 1;
         return;
     }
-    /*if (!createShortcutBitmap(shortcut_Bitmap))
-    {
-        debugger_main.writelog(DWARNNING, "createShortcutBitmap() failed!", __LINE__);
-    }*/
+    
 
     //recreate fonts
     LoadFonts();
@@ -2792,7 +2792,7 @@ void input()
     clicking = 0, rightclick = 0, keyw = 0, keya = 0, keys = 0, keyd = 0, keyTab = 0, keyESC = 0, keyComb = 0, keySpace=0;
     if (hWnd == FocusWindow)
     {
-        if (KEY_DOWN(27) && page_index != 0)
+        if (KEY_DOWN(27))
         {
             keyESC = 1;
         }
@@ -3683,8 +3683,6 @@ void CreateD2DResource()
         g_pD2DDeviceContext->SetTarget(g_pD2DTargetBimtap);
     }
     
-    init_string();
-    tip_used_num = rand() % 16;
     debugger_main.writelog(0,"DirectX was built.");
     thread_IO_request_verify_res = -1;
     return;
@@ -5327,8 +5325,14 @@ bool PAGE::EnterPage()
             debugger_main.writelog(DWARNNING, "failed to init page");
         }
     }
+    g_rm.AddResource("button1", ".\\sounds\\Button1.wav", "pass", RESOURCE_INFO::DEFAULT_WAVE);
+    g_rm.AddResource("button2", ".\\sounds\\Button2.wav", "pass", RESOURCE_INFO::DEFAULT_WAVE);
+    g_rm.AddResource("alertTick", ".\\sounds\\alertTick.wav", "pass", RESOURCE_INFO::DEFAULT_WAVE);
+    g_rm.AddResource("ioerror", ".\\sounds\\ioerror.wav", "pass", RESOURCE_INFO::DEFAULT_WAVE);
+
     Page_status = PAGE_INIT_STATUS;
     g_cm.ClearPage();
+    
     return 1;
 }
 
@@ -5413,11 +5417,6 @@ void PageManager::update()
             debugger_main.add_output_line("currentPage nullptr in PageManager::update()");
             return;
         }
-        if (page_index != currentPage->getPageIndex())
-        {
-            debugger_main.add_output_line("currentPage not match in PageManager::update() (compatible) "+to_string(page_index));
-            return;
-        }
         currentPage->Update();
         debugger_main.add_output_line("currentPage: "+ currentPage->getTAG());
     }
@@ -5431,10 +5430,6 @@ void PageManager::rend()
     {
         return;
         debugger_main.writelog(DERROR, "currentPage nullptr in PageManager::rend()", __LINE__);
-        return;
-    }
-    if (page_index != currentPage->getPageIndex())
-    {
         return;
     }
     currentPage->Rend();
@@ -5506,9 +5501,18 @@ string PageManager::GetCurrentPageTag()
 {
     if (currentPage == nullptr)
     {
-        return "page index= " + to_string(page_index);
+        return "no page played";
     }
     return currentPage->getTAG();
+}
+
+int PageManager::GetCurrentPageIndex()
+{
+    if (currentPage == nullptr)
+    {
+        return -1;
+    }
+    return currentPage->getPageIndex();
 }
 
 void PageManager::SwitchPage_implement()
@@ -5533,8 +5537,6 @@ void PageManager::SwitchPage_implement()
         debugger_main.writelog(DERROR, "Failed to EnterPage in PageManager::SwitchPage_implement() target page_index=" + to_string(nextPage->getPageIndex()), __LINE__);
     }
     currentPage = nextPage;
-    page_index = currentPage->getPageIndex();
-    page_status = 0;
     nextPage = nullptr;
     debugger_main.writelog(DDEBUG, "in PageManager::SwitchPage_implement() switching page_index=" + to_string(currentPage->getPageIndex()), __LINE__);
     return;

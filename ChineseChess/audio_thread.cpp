@@ -15,13 +15,7 @@ bool loadWavFile(const string filename, ALcoms* waveData);
 
 AudioManager::AudioManager()
 {
-    for (int i = 0; i < SE_MAX; i++)
-    {
-        memset(&se[i], 0, sizeof(se[i]));
-    }
-    
 
-    
     device_created = 0;
     thread_Audio_switch_immediately = 0, thread_Audio_quit_single = 0, thread_Audio_volume_changed = 0;
     thread_Audio_volume_changed_music = 0;
@@ -43,7 +37,7 @@ void AudioManager::Init()
     }
     device_created = 1;
     alListener3f(AL_POSITION, 0.0f, 0.0f, 0.0f);
-    int alerr = AL_NO_ERROR;
+    /*int alerr = AL_NO_ERROR;
     string se_filenames[11],aliasNames[11];
     se_filenames[0] = ".\\sounds\\Button1.wav";
     se_filenames[1] = ".\\sounds\\Button2.wav";
@@ -72,16 +66,21 @@ void AudioManager::Init()
     {
         g_rm.AddResource(aliasNames[i], se_filenames[i], "pass", RESOURCE_INFO::DEFAULT_WAVE);
     }
-    g_rm.LoadAll();
+    g_rm.LoadAll();*/
     return;
 }
 
 shared_ptr<SE_INFO> AudioManager::LoadWavFromFile(string aliasName, string filePath, AUDIO_DESC audio_desc)
 {
     int alerr = AL_NO_ERROR;
-    if (filePath.empty() || audio_desc.se_source_num == 0 || audio_desc.type != AUDIO_DESC::AUDIO_TYPE::AUDIO_TYPE_WAV)
+    if (filePath.empty() || audio_desc.se_source_num <= 0 || audio_desc.type != AUDIO_DESC::AUDIO_TYPE::AUDIO_TYPE_WAV)
     {
-        return;
+        return nullptr;
+    }
+    if (!device_created)
+    {
+        debugger_audio.writelog(DWARNNING, "device not created in LoadWavFromFile()", __LINE__);
+        return nullptr;
     }
     //prepare meta data
     shared_ptr<SE_INFO> se_info = make_shared<SE_INFO>();
@@ -139,7 +138,7 @@ shared_ptr<SE_INFO> AudioManager::LoadWavFromFile(string aliasName, string fileP
         }
         
     }
-    debugger_audio.writelog(DDEBUG, "load wav completed: " + filePath);
+    debugger_audio.writelog(DDEBUG, "load wav completed: " + filePath + " as " + aliasName);
     return se_info;
 }
 
@@ -155,7 +154,11 @@ void AudioManager::Cleanup(shared_ptr<SE_INFO> se_info)
         alDeleteSources(1, &se_info->ALwav[i].sourceID);
     }
     alDeleteBuffers(1, &se_info->ALwav[0].bufferID);
-    
+    int alerr = alGetError();
+    if (alerr != AL_NO_ERROR)
+    {
+        debugger_audio.writelog(DWARNNING, "alDeleteBuffers error in AudioManager::Cleanup(shared_ptr<SE_INFO> se_info)! " + to_string(alerr), __LINE__);
+    }
     return;
 }
 
@@ -178,16 +181,32 @@ void AudioManager::updateSE()
     int alerr = AL_NO_ERROR;
     for (int i = 0; i < SE_MAX; i++)
     {
-        if (se[i].se_aliasName.load().empty())
+        if (se[i].valid.load() == 0)
         {
             continue;
         }
-        shared_ptr<SE_INFO> se_info;
-        
-        for (int j = 0; j < SE_AUDIO_SOURCE_NUM; j++)
+        if (se[i].se_aliasName.empty())
+        {
+            debugger_audio.writelog(DWARNNING, "null se_aliasName in AudioManager::updateSE()", __LINE__);
+            se[i].valid.store(0);
+            continue;
+        }
+        shared_ptr<SE_INFO> se_info = g_rm.getAudio(se[i].se_aliasName);
+        if (se_info == nullptr)
+        {
+            debugger_audio.writelog(DWARNNING, "audio not found in resource manager: " + se[i].se_aliasName, __LINE__);
+            se[i].valid.store(0);
+            continue;
+        }
+        //debugger_audio.writelog(DDEBUG, "play se: " + se[i].se_aliasName);
+        for (int j = 0; j < se_info->source_num; j++)
         {
             alGetSourcei(se_info->ALwav[j].sourceID, AL_SOURCE_STATE, &se_info->ALwav[j].state);
-
+            alerr = alGetError();
+            if (alerr != AL_NO_ERROR)
+            {
+                debugger_audio.writelog(DWARNNING, "alGetSourcei error in AudioManager::updateSE()! " + to_string(alerr), __LINE__);
+            }
             if (se_info->ALwav[j].state == AL_STOPPED || se_info->ALwav[j].state == AL_INITIAL)
             {
                 alSourcef(se_info->ALwav[j].sourceID, AL_GAIN, (float)set3[0].se_volume * se[i].volumn * se_info->loudnessOffset / 100.0F);  //ÒôÁ¿
@@ -206,9 +225,14 @@ void AudioManager::updateSE()
                     }
                 }
                 alSourcePlay(se_info->ALwav[j].sourceID);
+                alerr = alGetError();
+                if (alerr != AL_NO_ERROR)
+                {
+                    debugger_audio.writelog(DWARNNING, "alSourcePlay error in AudioManager::updateSE()! " + to_string(alerr), __LINE__);
+                }
                 break;
             }
-            if (j == SE_AUDIO_SOURCE_NUM - 1)
+            if (j == se_info->source_num - 1)
             {
                 alSourceStop(se_info->ALwav[0].sourceID);
                 alSourcef(se_info->ALwav[0].sourceID, AL_GAIN, (float)set3[0].se_volume * se[i].volumn / 100.0F);  //ÒôÁ¿
@@ -228,8 +252,7 @@ void AudioManager::updateSE()
                 alSourcePlay(se_info->ALwav[0].sourceID);
             }
         }
-        se[i].se_aliasName.store("");
-        //memset(&g_am.se[i], 0, sizeof(g_am.se[i]));
+        se[i].valid.store(0);
     }
     return;
 }
@@ -244,24 +267,26 @@ AudioManager::~AudioManager()
     
 }
 
-void AudioManager::PlayEffectSound(const string aliasName, const float volumn)
+void AudioManager::PlayEffectSound(string aliasName, float volumn)
 {
     for (int i = 0; i < SE_MAX; i++)
     {
-        if (se[i].se_aliasName.load().empty())
+        if (!se[i].se_aliasName.empty())
         {
             continue;
         }
-        se[i].se_aliasName.store(aliasName);
         se[i].sound_3d_position = 0;
         se[i].volumn = volumn;
+        se[i].se_aliasName = aliasName;
+        se[i].valid.store(1);
+        //debugger_audio.writelog(DDEBUG, "PlayEffectSound se[i].se_aliasName=" + se[i].se_aliasName + " aliasName=" + aliasName);
         break;
     }
     return;
 }
 
 
-void AudioManager::PlayEffectSound(string aliasName, float x, float y, float z, float volumn = 1.0f)
+void AudioManager::PlayEffectSound(string aliasName, float x, float y, float z, float volumn)
 {
     if (x < -1)
     {
@@ -295,7 +320,7 @@ void AudioManager::PlayEffectSound(string aliasName, float x, float y, float z, 
     }
     for (int i = 0; i < SE_MAX; i++)
     {
-        if (se[i].se_aliasName.load().empty())
+        if (!se[i].se_aliasName.empty())
         {
             continue;
         }
@@ -313,7 +338,8 @@ void AudioManager::PlayEffectSound(string aliasName, float x, float y, float z, 
 
         se[i].volumn = 1 - (0.5f * sqrtf(2 * x * x + 2 * y * y)) * volumn;  // 1-sqrt(2)/2 ~ 1
 
-        se[i].se_aliasName.store(aliasName);
+        se[i].se_aliasName = aliasName;
+        se[i].valid.store(1);
         break;
     }
     return;
@@ -710,6 +736,7 @@ unsigned __stdcall ThreadPlayMusic(LPVOID lpParameter)
     debugger_audio.writelog(0,"ThreadPlayMusic started.");
 
     srand((unsigned int)GetTickCount64());
+    g_am.Init();
     
     musicinfo stage1[16], stage2[16], sys[5];
     int musicnum1 = 0, musicnum2 = 0;
@@ -742,7 +769,7 @@ unsigned __stdcall ThreadPlayMusic(LPVOID lpParameter)
         } while (_findnext(hFile, &fileinfo) == 0);
         _findclose(hFile);
     }
-    hFile = 0;
+    /*hFile = 0;
     p = ".\\music\\battle\\*.ogg";
     memset(&fileinfo, 0, sizeof(fileinfo));
     if ((hFile = _findfirst(p.c_str(), &fileinfo)) != -1)
@@ -761,7 +788,7 @@ unsigned __stdcall ThreadPlayMusic(LPVOID lpParameter)
             }
         } while (_findnext(hFile, &fileinfo) == 0);
         _findclose(hFile);
-    }
+    }*/
 
 
 
@@ -816,7 +843,7 @@ unsigned __stdcall ThreadPlayMusic(LPVOID lpParameter)
             return 0;
         }
     }
-    g_am.Init();
+    
     alDistanceModel(AL_INVERSE_DISTANCE);
 
     int current_playing_wav = 0;

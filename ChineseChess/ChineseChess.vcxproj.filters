@@ -66,6 +66,9 @@
     <ClInclude Include="cchess\CChessUIPVE.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="audio_base.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AppMain.cpp">
