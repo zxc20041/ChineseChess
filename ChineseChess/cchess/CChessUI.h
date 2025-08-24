@@ -71,6 +71,7 @@ protected:
 		void Update();
 		void RendPieces();
 		void RendBG();
+		void RendEffect();
 		void RendMark();
 		void Reset();
 		bool LoadPiecesAtlasInfo();
@@ -80,6 +81,8 @@ protected:
 		void SelectPiece(int x, int y);
 		void UnSelectPiece(int x, int y);
 		void MovePiece(PieceMoveDesc move, bool eat);
+		void Eat();
+		void CheckMate();
 		void GameOver(bool win_side);
 		void PostDraw(bool post_side);
 
@@ -87,6 +90,14 @@ protected:
 	private:
 		constexpr static int PIECE_NUM_MAX = 32;
 		constexpr static float MARK_RADIUS_RATIO_MAX = 0.2F;
+		constexpr static D2D1_RECT_F CENTER_RECT = { 600,300,1000,600 };
+
+		enum class TEXT_EFFECT_TYPE
+		{
+			EAT,
+			CHECK,
+			MATE
+		};
 		
 		float radius_ratio;
 		float timeScale;
@@ -102,6 +113,9 @@ protected:
 		D2D1_RECT_F board_rect, river_rect, map_rect, map_rect_extent;
 
 		bool side_red;
+
+		TEXT_EFFECT_TYPE effect_type;
+		float effect_time;
 	};
 
 	UIRender render;

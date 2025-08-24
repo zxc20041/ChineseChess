@@ -489,7 +489,6 @@ shared_ptr<SE_INFO> ResourceManager::getAudio(string aliasName)
         debugger_main.writelog(DWARNNING, "res not found in ResourceManager::getAudio() " + aliasName);
         return nullptr;
     }
-    debugger_main.writelog(DDEBUG, "res found in ResourceManager::getAudio() " + aliasName);
     return audioMap[aliasName];
 }
 
@@ -647,7 +646,9 @@ bool ResourceManager::LoadFont(RESOURCE_INFO* res_desc)
         debugger_main.writelog(DWARNNING, "CreateTextFormat failed!  " + res_desc->filePath, __LINE__);
         return 0;
     }
-
+    debugger_main.writelog(DDEBUG, "font loaded: " + res_desc->fontDesc.FontFamilyName + " size=" + to_string(res_desc->fontDesc.fontSize), __LINE__);
+    textFormat->SetTextAlignment(res_desc->fontDesc.text_align);
+    textFormat->SetParagraphAlignment(res_desc->fontDesc.para_align);
     fontMap[res_desc->aliasName] = textFormat;
     return 1;
 }
@@ -683,7 +684,7 @@ bool ResourceManager::LoadAudio(RESOURCE_INFO* res_desc)
 
 bool ResourceManager::LoadAll_implementation()
 {
-    debugger_main.writelog(DDEBUG, "in ResourceManager::LoadAll_implementation()", __LINE__);
+    //debugger_main.writelog(DDEBUG, "in ResourceManager::LoadAll_implementation()", __LINE__);
     for (auto& i : res_info)
     {
         if (i == nullptr)
@@ -5517,7 +5518,7 @@ int PageManager::GetCurrentPageIndex()
 
 void PageManager::SwitchPage_implement()
 {
-    debugger_main.writelog(DDEBUG, "in PageManager::SwitchPage_implement()", __LINE__);
+    //debugger_main.writelog(DDEBUG, "in PageManager::SwitchPage_implement()", __LINE__);
     switchingPage = 0;
     if (currentPage != nullptr)
     {

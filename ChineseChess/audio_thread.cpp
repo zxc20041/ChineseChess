@@ -72,10 +72,15 @@ void AudioManager::Init()
 
 shared_ptr<SE_INFO> AudioManager::LoadWavFromFile(string aliasName, string filePath, AUDIO_DESC audio_desc)
 {
-    int alerr = AL_NO_ERROR;
+    int alerr = AL_NO_ERROR, cnt = 0;
     if (filePath.empty() || audio_desc.se_source_num <= 0 || audio_desc.type != AUDIO_DESC::AUDIO_TYPE::AUDIO_TYPE_WAV)
     {
         return nullptr;
+    }
+    while (!device_created && cnt < 100)
+    {
+        Sleep(10);
+        cnt++;
     }
     if (!device_created)
     {
@@ -138,7 +143,7 @@ shared_ptr<SE_INFO> AudioManager::LoadWavFromFile(string aliasName, string fileP
         }
         
     }
-    debugger_audio.writelog(DDEBUG, "load wav completed: " + filePath + " as " + aliasName);
+    //debugger_audio.writelog(DDEBUG, "load wav completed: " + filePath + " as " + aliasName);
     return se_info;
 }
 
@@ -148,6 +153,8 @@ void AudioManager::Cleanup(shared_ptr<SE_INFO> se_info)
     {
         return;
     }
+    while (se_info->playing.load());
+
     for (int i = 0; i < se_info->source_num; i++)
     {
         alSourceStop(se_info->ALwav[i].sourceID);
@@ -192,6 +199,7 @@ void AudioManager::updateSE()
             continue;
         }
         shared_ptr<SE_INFO> se_info = g_rm.getAudio(se[i].se_aliasName);
+        se_info->playing.store(1);
         if (se_info == nullptr)
         {
             debugger_audio.writelog(DWARNNING, "audio not found in resource manager: " + se[i].se_aliasName, __LINE__);
@@ -253,6 +261,7 @@ void AudioManager::updateSE()
             }
         }
         se[i].valid.store(0);
+        se_info->playing.store(0);
     }
     return;
 }
@@ -279,7 +288,6 @@ void AudioManager::PlayEffectSound(string aliasName, float volumn)
         se[i].volumn = volumn;
         se[i].se_aliasName = aliasName;
         se[i].valid.store(1);
-        //debugger_audio.writelog(DDEBUG, "PlayEffectSound se[i].se_aliasName=" + se[i].se_aliasName + " aliasName=" + aliasName);
         break;
     }
     return;
@@ -575,9 +583,9 @@ bool loadWavFile(const string filename, ALcoms* waveData)
         fclose(soundFile);
         return true;
     }
-    catch (std::string error) {
+    catch (std::exception error) {
         //our catch statement for if we throw a string
-        debugger_audio.writelog(1, "failed to load wave file: " + filename + " " + error);
+        debugger_audio.writelog(1, "failed to load wave file: " + filename + " " + error.what());
 
         Sleep(100);
         //clean up memory if wave loading fails

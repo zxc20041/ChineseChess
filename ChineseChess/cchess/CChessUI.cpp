@@ -1,5 +1,5 @@
 #include"CChessUI.h"
-
+#include"audio_thread.h"
 using namespace debugger;
 using namespace CChessBase;
 
@@ -109,6 +109,10 @@ void CChessUI::Update()
 		{
 			render.GameOver(r.win_side);
 		}
+		else if (r.result == RESULT_CHECK)
+		{
+			render.CheckMate();
+		}
 	}
 
 	render.Update();
@@ -120,6 +124,7 @@ void CChessUI::Rend()
 	render.RendBG();
 	render.RendPieces();
 	render.RendMark();
+	render.RendEffect();
 	return;
 }
 
@@ -189,6 +194,14 @@ void CChessUI::UIRender::Update()
 	for (auto& i : pieces)
 	{
 		i->update(timeScale);
+	}
+	if (effect_time < 1)
+	{
+		effect_time += frmtm * timeScale * 4;
+	}
+	else if (effect_time < 2)
+	{
+		effect_time += frmtm * timeScale;
 	}
 	return;
 }
@@ -290,6 +303,29 @@ void CChessUI::UIRender::RendBG()
 	
 
 	return;
+}
+
+void CChessUI::UIRender::RendEffect()
+{
+	if (effect_time > 2)
+	{
+		return;
+	}
+	switch (effect_type)
+	{
+	case CChessUI::UIRender::TEXT_EFFECT_TYPE::EAT:
+
+		DrawTextA_1("³Ô", g_rm.getFont("effect font"), CENTER_RECT, g_pBrushBlack, sinf(effect_time * PI * 0.5f));
+		break;
+	case CChessUI::UIRender::TEXT_EFFECT_TYPE::CHECK:
+		DrawTextA_1("½«¾ü", g_rm.getFont("effect font"), CENTER_RECT, g_pBrushBlack, sinf(effect_time * PI * 0.5f));
+		break;
+	case CChessUI::UIRender::TEXT_EFFECT_TYPE::MATE:
+		DrawTextA_1("¾øÉ±", g_rm.getFont("effect font"), CENTER_RECT, g_pBrushBlack, sinf(effect_time * PI * 0.5f));
+		break;
+	default:
+		break;
+	}
 }
 
 void CChessUI::UIRender::RendMark()
@@ -470,7 +506,7 @@ void CChessUI::UIRender::MovePiece(PieceMoveDesc move, bool eat)
 			}
 		}
 		//todo: play se & anime
-
+		Eat();
 	}
 	for (auto& i : pieces)
 	{
@@ -485,17 +521,36 @@ void CChessUI::UIRender::MovePiece(PieceMoveDesc move, bool eat)
 	return;
 }
 
+void CChessUI::UIRender::Eat()
+{
+	g_am.PlayEffectSound("eat");
+	effect_type = TEXT_EFFECT_TYPE::EAT;
+	effect_time = 0;
+	return;
+}
+
+void CChessUI::UIRender::CheckMate()
+{
+	g_am.PlayEffectSound("checkmate");
+	effect_type = TEXT_EFFECT_TYPE::CHECK;
+	effect_time = 0;
+	return;
+}
+
 void CChessUI::UIRender::GameOver(bool win_side)
 {
 	debugger_main.writelog(DINFO, "GAMEOVER win_side= " + (win_side ? string("red") : string("black")), __LINE__);
 	//todo: play anime and se, lock the board
-
+	g_am.PlayEffectSound("juesha");
+	effect_type = TEXT_EFFECT_TYPE::MATE;
+	effect_time = 0;
+	return;
 }
 
 void CChessUI::UIRender::PostDraw(bool post_side)
 {
 	debugger_main.writelog(DINFO, "PostDraw post_side= " + post_side ? string("red") : string("black"), __LINE__);
-
+	
 }
 
 
@@ -704,6 +759,7 @@ void PIECE_UI::update(float timeScale)
 		{
 			moving_time = 0;
 			status = PIECE_DOWN_MOVING;
+			g_am.PlayEffectSound("move");
 		}
 		posx = map_line_x[currentMove.fromx] * (1 - moving_time * 4) + map_line_x[currentMove.tox] * moving_time * 4;
 		posy = map_line_y[BOARD_Y_MAX-currentMove.fromy] * (1 - moving_time * 4) + map_line_y[BOARD_Y_MAX-currentMove.toy] * moving_time * 4;

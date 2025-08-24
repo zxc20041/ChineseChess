@@ -28,7 +28,8 @@ namespace CChessBase
 	{
 		RESULT_MATE,
 		RESULT_DRAW,
-		RESULT_RESIGN
+		RESULT_RESIGN,
+		RESULT_CHECK
 	};
 
 	/*               BLACK

@@ -104,12 +104,19 @@ bool LocalGame_Page::EnterPage()
 			return;
 		});
 
+	g_rm.AddResource("effect font", ".\\game\\font\\QianTuBiFengShouXieTi.ttf", "pass", FONT_DESC{ "«ßÕº± ∑Ê ÷–¥ÃÂ",40 });
+
 	g_rm.AddResource("bg board", ".\\game\\pic\\board.jpg", "DE601E07F5C7D8B8DDD81F521A458510", RESOURCE_INFO::BRUSH_ONLY);
-
 	g_rm.AddResource("bg river", ".\\game\\pic\\bg_river.png", "pass", RESOURCE_INFO::DEFAULT_Bitmap);
-
 	g_rm.AddResource("pieces", ".\\game\\pic\\pieces.png", "pass", RESOURCE_INFO::DEFAULT_Bitmap);
+
 	g_rm.AddResource("pieces atlas info", ".\\game\\pic\\pieces.dat", "pass", RESOURCE_INFO::DEFAULT_TEXT);
+
+	g_rm.AddResource("eat", ".\\game\\sounds\\eat.wav", "pass", RESOURCE_INFO::DEFAULT_WAVE);
+	g_rm.AddResource("juesha", ".\\game\\sounds\\juesha.wav", "pass", RESOURCE_INFO::DEFAULT_WAVE);
+	g_rm.AddResource("checkmate", ".\\game\\sounds\\checkmate.wav", "pass", RESOURCE_INFO::DEFAULT_WAVE);
+	g_rm.AddResource("move", ".\\game\\sounds\\move.wav", "pass", RESOURCE_INFO::DEFAULT_WAVE);
+
 	g_rm.LoadAll();
 
 	g_cm.AddButton(returnButton);

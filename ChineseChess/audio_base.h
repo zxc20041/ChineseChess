@@ -60,6 +60,7 @@ struct SE_INFO
     std::vector<ALcoms> ALwav;
     float loudnessOffset = 1.0f;
     int source_num = 0;
+    std::atomic<bool> playing = 0;
 };
 
 struct SE_DESC
