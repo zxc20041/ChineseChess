@@ -387,7 +387,7 @@ void ResourceManager::AddResource(string aliasName, string filePath, string md5,
     {
         debugger_main.writelog(DWARNNING, "Load Font Resource failed! " + filePath, __LINE__);
     }
-
+    PostMessage(HWND_BROADCAST, WM_FONTCHANGE, 0, 0);
     res_info[res_num] = new RESOURCE_INFO(aliasName, filePath, ResourceType::Resource_Font, md5, TEXTURE_DESC(), font_desc, TEXT_DESC(), AUDIO_DESC());
     res_num++;
 
@@ -568,7 +568,7 @@ bool ResourceManager::LoadTexture(RESOURCE_INFO* res_desc)
 {
     ID2D1Bitmap* pBitmap = nullptr;
     IWICBitmapSource* pWicBitmap = nullptr;
-    HRESULT hr = LoadBitmapFromFile(pIWICFactory, stringToLPCWSTR(res_desc->filePath), res_desc->textureDesc.width, res_desc->textureDesc.height, &pBitmap, res_desc->textureDesc.save_WicBitmapSource ? &pWicBitmap : nullptr);
+    HRESULT hr = LoadBitmapFromFile(pIWICFactory, string2LPCWSTR(res_desc->filePath), res_desc->textureDesc.width, res_desc->textureDesc.height, &pBitmap, res_desc->textureDesc.save_WicBitmapSource ? &pWicBitmap : nullptr);
     if (hr != S_OK || pBitmap == nullptr)
     {
         debugger_main.writelog(DWARNNING, "Load Bitmap From File failed!  " + res_desc->filePath, __LINE__);
@@ -631,7 +631,7 @@ bool ResourceManager::LoadFont(RESOURCE_INFO* res_desc)
     IDWriteTextFormat* textFormat = nullptr;
 
     HRESULT hr = g_pDWriteFactory->CreateTextFormat(
-        stringToLPCWSTR(res_desc->fontDesc.FontFamilyName),
+        string2LPCWSTR(res_desc->fontDesc.FontFamilyName),
         NULL,
         DWRITE_FONT_WEIGHT_REGULAR,
         DWRITE_FONT_STYLE_NORMAL,
@@ -646,7 +646,7 @@ bool ResourceManager::LoadFont(RESOURCE_INFO* res_desc)
         debugger_main.writelog(DWARNNING, "CreateTextFormat failed!  " + res_desc->filePath, __LINE__);
         return 0;
     }
-    debugger_main.writelog(DDEBUG, "font loaded: " + res_desc->fontDesc.FontFamilyName + " size=" + to_string(res_desc->fontDesc.fontSize), __LINE__);
+    //debugger_main.writelog(DDEBUG, "font loaded: " + res_desc->fontDesc.FontFamilyName + " size=" + to_string(res_desc->fontDesc.fontSize), __LINE__);
     textFormat->SetTextAlignment(res_desc->fontDesc.text_align);
     textFormat->SetParagraphAlignment(res_desc->fontDesc.para_align);
     fontMap[res_desc->aliasName] = textFormat;
@@ -760,6 +760,7 @@ void ResourceManager::releaseAll_implementation()
             continue;
         }
         i.second->Release();
+        i.second = nullptr;
     }
     textureMap.clear();
 
@@ -2339,16 +2340,29 @@ void Wchar_tToString(string& szDst, wchar_t* wchar)
     return;
 }
 
-LPCWSTR stringToLPCWSTR(string orig)
+LPCWSTR string2LPCWSTR(std::string str)
 {
-    size_t origsize = orig.length() + 1;
-    const size_t newsize = 100;
-    size_t convertedChars = 0;
-    wchar_t* wcstring = (wchar_t*)malloc(sizeof(wchar_t) * (orig.length() + 1));
-    mbstowcs_s(&convertedChars, wcstring, origsize, orig.c_str(), _TRUNCATE);
-
-    return wcstring;
+    size_t size = str.length();
+    int wLen = ::MultiByteToWideChar(CP_UTF8,
+        0,
+        str.c_str(),
+        -1,
+        NULL,
+        0);
+    wchar_t* buffer = new wchar_t[wLen + 1];
+    memset(buffer, 0, (wLen + 1) * sizeof(wchar_t));
+    MultiByteToWideChar(CP_ACP, 0, str.c_str(), size, (LPWSTR)buffer, wLen);
+    return buffer;
 }
+//LPCWSTR stringToLPCWSTR(string orig)
+//{
+//    size_t origsize = orig.length() + 1;
+//    size_t convertedChars = 0;
+//    wchar_t* wcstring = (wchar_t*)malloc(sizeof(wchar_t) * origsize);
+//    mbstowcs_s(&convertedChars, wcstring, origsize, orig.c_str(), _TRUNCATE);
+//
+//    return wcstring;
+//}
 
 
 void CleanStrBuff(string buf[],int size)
@@ -3749,6 +3763,7 @@ void LoadFonts()
         L"en-us",
         &g_pTextFormatL
     );
+
     g_rm.setFont("DEYIHEI LEFT", g_pTextFormatL);
 
     SAFE_RELEASE(g_pTextFormat2)
@@ -4681,21 +4696,6 @@ void init_once()
     res[51].filename = ".\\sounds\\tick.wav"; res[51].md5 = "53C4F41AAE08974782B99A6C553E3B0C";
     res[52].filename = ".\\sounds\\loading.wav"; res[52].md5 = "83C94BFFC673E2801FE9A77DFF751549";
 
-    /*res[53].filename = ""; res[53].md5 = "C38C4FA1C6A646B1A570F0FBE5A38898";
-    res[54].filename = ""; res[54].md5 = "4B0489407711AE6EB995DBFCB34D4DF5";
-    res[55].filename = ""; res[55].md5 = "9B65588A85FFA6C834B69493CC699BAC";
-    res[59].filename = ""; res[59].md5 = "7EDDF5F63DAE44B74BD61AA7DDC8367F";
-    res[60].filename = ""; res[60].md5 = "E0F1AF48F81C8DA9C95946F0401A7659";
-    res[61].filename = ""; res[61].md5 = "1AAC02ECFD0AA8C5F382114AABFD2545";
-    res[62].filename = ""; res[62].md5 = "3B9FBA764064A4454E80DC66229D5AE8";
-    res[63].filename = ""; res[63].md5 = "B6BC8B8ACBEDF16F17B5980D42E96985";
-    res[64].filename = ""; res[64].md5 = "72E4C1E9E437D02018065A4876F0BF8D";
-    res[65].filename = ""; res[65].md5 = "25E46C336EFD7B1C28E43139A1CBB878";
-    res[66].filename = ""; res[66].md5 = "90E6B9F087773540050F268BE04FB346";
-    res[67].filename = ""; res[67].md5 = "CB4C08DC8A74BAF8A87AF94D4BDA5F89";
-    res[68].filename = ""; res[68].md5 = "560D6F8E5329C13ED387BAEED53FF066";
-    res[69].filename = ""; res[69].md5 = "4BE1F60BB1918493BE1B359AF654F755";
-    res[70].filename = ""; res[70].md5 = "27DFBA82A8D18BB964924FBBBDD2286F";*/
 
 
     
@@ -5016,7 +5016,7 @@ void initgame()
     {
         if (res[i].filename != "")
         {
-            res[i].Lfilename = stringToLPCWSTR(res[i].filename);
+            res[i].Lfilename = string2LPCWSTR(res[i].filename);
         }
     }
     debugger_main.writelog(0,"Loading Bitmap From File...");

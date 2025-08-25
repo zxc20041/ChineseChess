@@ -104,7 +104,7 @@ bool LocalGame_Page::EnterPage()
 			return;
 		});
 
-	g_rm.AddResource("effect font", ".\\game\\font\\QianTuBiFengShouXieTi.ttf", "pass", FONT_DESC{ "«ßÕº± ∑Ê ÷–¥ÃÂ",40 });
+	g_rm.AddResource("effect font", ".\\game\\font\\QianTuBiFengShouXieTi.ttf", "pass", FONT_DESC{ "«ßÕº± ∑Ê ÷–¥ÃÂ",160 });
 
 	g_rm.AddResource("bg board", ".\\game\\pic\\board.jpg", "DE601E07F5C7D8B8DDD81F521A458510", RESOURCE_INFO::BRUSH_ONLY);
 	g_rm.AddResource("bg river", ".\\game\\pic\\bg_river.png", "pass", RESOURCE_INFO::DEFAULT_Bitmap);

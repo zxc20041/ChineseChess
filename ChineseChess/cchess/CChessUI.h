@@ -24,12 +24,15 @@ public:
 	void MoveTo(PieceMoveDesc move);
 	void Die();
 	bool MatchPosition(int x, int y);
+	Piece_Move_Status GetStatus();
 	static unordered_map<string, PIECE_ATLAS_INFO> piece_rect_set;
 	static D2D1_RECT_F piece_rect[BOARD_X_MAX + 1][BOARD_Y_MAX + 1];
 	static float map_line_x[BOARD_X_MAX + 1], map_line_y[BOARD_Y_MAX + 1];
+	static bool current_side;
 private:
+	static constexpr float DELTA_Y_FACTOR = 0.25F, ZOOM_FACTOR = 0.25F, SPEED_FACTOR = 1;
 	int x, y;
-	float posx, posy;
+	float posx, posy, delta_y, zoom_multiple/*0-ZOOM_FACTOR, offset multiple*/, speed_multiple;
 	float moving_time;
 	bool side_red;
 	Piece_Move_Status status;

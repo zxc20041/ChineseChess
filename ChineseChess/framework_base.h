@@ -741,7 +741,7 @@ void InitPage(int index);
 
 void Wchar_tToString(string& szDst, wchar_t* wchar);
 
-LPCWSTR stringToLPCWSTR(string orig);
+LPCWSTR string2LPCWSTR(string str);
 
 //Çå¿ÕstringÊý×é
 void CleanStrBuff(string buf[], int size);

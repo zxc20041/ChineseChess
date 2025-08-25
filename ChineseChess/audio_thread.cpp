@@ -280,7 +280,7 @@ void AudioManager::PlayEffectSound(string aliasName, float volumn)
 {
     for (int i = 0; i < SE_MAX; i++)
     {
-        if (!se[i].se_aliasName.empty())
+        if (se[i].valid.load())
         {
             continue;
         }
@@ -328,7 +328,7 @@ void AudioManager::PlayEffectSound(string aliasName, float x, float y, float z, 
     }
     for (int i = 0; i < SE_MAX; i++)
     {
-        if (!se[i].se_aliasName.empty())
+        if (se[i].valid.load())
         {
             continue;
         }
@@ -501,7 +501,7 @@ bool loadWavFile(const string filename, ALcoms* waveData)
     try {
         fopen_s(&soundFile, filename.c_str(), "rb");
         if (!soundFile)
-            throw (filename);
+            throw ("fopen_s failed");
 
         // Read in the first chunk into the struct
         fread(&riff_header, sizeof(RIFF_Header), 1, soundFile);
@@ -580,7 +580,7 @@ bool loadWavFile(const string filename, ALcoms* waveData)
 
         //errorCheck();
         //clean up and return true if successful
-        fclose(soundFile);
+        int err = fclose(soundFile);
         return true;
     }
     catch (std::exception error) {
@@ -593,6 +593,11 @@ bool loadWavFile(const string filename, ALcoms* waveData)
             fclose(soundFile);
         //return false to indicate the failure to load wave
         return false;
+    }
+    catch (char c)
+    {
+        debugger_audio.writelog(1, "failed to fclose wave file: " + filename + " " + c);
+        return true;
     }
 }
 

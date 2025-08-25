@@ -205,7 +205,10 @@ void CChessEngineAdapter::read_output(string line)
         {
             return;
         }
-        
+    }
+    if (line.find("option name") != string::npos)
+    {
+        return;
     }
     debugger_main.writelog(DDEBUG, "read_output from proc: " + line, __LINE__);
     if (line.find("uciok") != string::npos)

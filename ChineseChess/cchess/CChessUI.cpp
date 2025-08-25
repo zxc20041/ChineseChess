@@ -2,11 +2,12 @@
 #include"audio_thread.h"
 using namespace debugger;
 using namespace CChessBase;
-
+#define DISTANCE(x1,y1,x2,y2) sqrtf((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1))
 
 unordered_map<string, PIECE_ATLAS_INFO> PIECE_UI::piece_rect_set;
 D2D1_RECT_F PIECE_UI::piece_rect[BOARD_X_MAX + 1][BOARD_Y_MAX + 1];
 float PIECE_UI::map_line_x[BOARD_X_MAX + 1], PIECE_UI::map_line_y[BOARD_Y_MAX + 1];
+bool PIECE_UI::current_side = SIDE_RED;
 
 CChessUI::CChessUI()
 {
@@ -136,11 +137,11 @@ void CChessUI::SetEngine(shared_ptr<CChessEngine> chessEngine)
 
 CChessUI::UIRender::UIRender()
 {
-	timeScale = 1;
+	timeScale = 2;
 	memset(pieces,0,sizeof(pieces));
 	side_red = 1;
 	radius_ratio = 0;
-
+	effect_time = 2;
 	map_area_posx1 = 380, map_area_posx2 = 1170, map_area_posy1 = 70, map_area_posy2 = 835;
 	block_length_x = (map_area_posx2 - map_area_posx1) / 8;
 	block_length_y = (map_area_posy2 - map_area_posy1) / 9;
@@ -210,7 +211,17 @@ void CChessUI::UIRender::RendPieces()
 {
 	for (auto &i : pieces)
 	{
-		i->rend(side_red);
+		if (i->GetStatus() == Piece_Move_Status::PIECE_STATIC)
+		{
+			i->rend(side_red);
+		}
+	}
+	for (auto& i : pieces)
+	{
+		if (i->GetStatus() != Piece_Move_Status::PIECE_STATIC)
+		{
+			i->rend(side_red);
+		}
 	}
 	return;
 }
@@ -315,13 +326,13 @@ void CChessUI::UIRender::RendEffect()
 	{
 	case CChessUI::UIRender::TEXT_EFFECT_TYPE::EAT:
 
-		DrawTextA_1("吃", g_rm.getFont("effect font"), CENTER_RECT, g_pBrushBlack, sinf(effect_time * PI * 0.5f));
+		DrawTextA_1("吃", g_rm.getFont("effect font"), 600, 300, 1000, 600, g_pBrushBlack, sinf(effect_time * PI * 0.5f));
 		break;
 	case CChessUI::UIRender::TEXT_EFFECT_TYPE::CHECK:
-		DrawTextA_1("将军", g_rm.getFont("effect font"), CENTER_RECT, g_pBrushBlack, sinf(effect_time * PI * 0.5f));
+		DrawTextA_1("将军", g_rm.getFont("effect font"), 600, 300, 1000, 600, g_pBrushBlack, sinf(effect_time * PI * 0.5f));
 		break;
 	case CChessUI::UIRender::TEXT_EFFECT_TYPE::MATE:
-		DrawTextA_1("绝杀", g_rm.getFont("effect font"), CENTER_RECT, g_pBrushBlack, sinf(effect_time * PI * 0.5f));
+		DrawTextA_1("绝杀", g_rm.getFont("effect font"), 600, 300, 1000, 600, g_pBrushBlack, sinf(effect_time * PI * 0.5f));
 		break;
 	default:
 		break;
@@ -457,6 +468,7 @@ bool CChessUI::UIRender::LoadPiecesAtlasInfo()
 void CChessUI::UIRender::SetSide(bool side_red)
 {
 	this->side_red = side_red;
+	PIECE_UI::current_side = side_red;
 	return;
 }
 
@@ -565,6 +577,7 @@ PIECE_UI::PIECE_UI(int x, int y, ChessPieceType type, bool side_red)
 	this->x = x, this->y = y;
 	posx = map_line_x[x];
 	posy = map_line_y[BOARD_Y_MAX - y];
+	delta_y = 0, zoom_multiple = 1, speed_multiple = 1;
 	this->type = type;
 	this->side_red = side_red;
 	status = Piece_Move_Status::PIECE_STATIC;
@@ -661,7 +674,6 @@ PIECE_UI::PIECE_UI(int x, int y, ChessPieceType type, bool side_red)
 			break;
 		}
 	}
-	return;
 }
 
 void PIECE_UI::rend(bool board_side_red)
@@ -676,25 +688,41 @@ void PIECE_UI::rend(bool board_side_red)
 		return;
 	}
 	ID2D1Bitmap* texture = g_rm.getTexture("pieces");
-
+	
 	if (board_side_red)
 	{
+		//apply delta_y
+		D2D1_RECT_F new_piece_rect =
+			D2D1::RectF(piece_rect[x][y].left, piece_rect[x][y].top + delta_y, piece_rect[x][y].right, piece_rect[x][y].bottom + delta_y);
+		//apply zoom_multiple
+		new_piece_rect.top -= (new_piece_rect.bottom - new_piece_rect.top) * zoom_multiple * 0.5f;
+		new_piece_rect.bottom += (new_piece_rect.bottom - new_piece_rect.top) * zoom_multiple * 0.5f;
+		new_piece_rect.left -= (new_piece_rect.right - new_piece_rect.left) * zoom_multiple * 0.5f;
+		new_piece_rect.right += (new_piece_rect.right - new_piece_rect.left) * zoom_multiple  * 0.5f;
 		switch (status)
 		{
 		case CChessBase::PIECE_STATIC:
 			DrawBitmap_1(texture, piece_rect[x][y], static_rect, 1.0f);
 			break;
 		case CChessBase::PIECE_UP_MOVING:
-			DrawBitmap_1(texture, piece_rect[x][y], up_rect, 1.0f);
+			DrawBitmap_1(texture, new_piece_rect, down_rect, 1.0f);
 			break;
 		case CChessBase::PIECE_HANG:
-			DrawBitmap_1(texture, piece_rect[x][y], up_rect, 1.0f);
+			DrawBitmap_1(texture, new_piece_rect, down_rect, 1.0f);
 			break;
 		case CChessBase::PIECE_DOWN_MOVING:
-			DrawBitmap_1(texture, piece_rect[x][y], down_rect, 1.0f);
+			DrawBitmap_1(texture, new_piece_rect, down_rect, 1.0f);
 			break;
 		case CChessBase::PIECE_MOVING_TO:
-			DrawBitmap_1(texture, D2D1::RectF(posx - (map_line_x[1] - map_line_x[0]) * 0.5f, posy - (map_line_y[1] - map_line_y[0]) * 0.5f, posx + (map_line_x[1] - map_line_x[0]) * 0.5f, posy + (map_line_y[1] - map_line_y[0]) * 0.5f), up_rect, 1.0f);
+			DrawBitmap_1(texture, 
+				D2D1::RectF(posx - (map_line_x[1] - map_line_x[0]) * 0.5f, posy - (map_line_y[1] - map_line_y[0]) * 0.5f + delta_y, posx + (map_line_x[1] - map_line_x[0]) * 0.5f, posy + (map_line_y[1] - map_line_y[0]) * 0.5f + delta_y),
+				up_rect, 1.0f);
+			break;
+		case CChessBase::PIECE_MOVED_DOWN1:
+			DrawBitmap_1(texture, new_piece_rect, static_rect, 1.0f);
+			break;
+		case CChessBase::PIECE_MOVED_DOWN2:
+			DrawBitmap_1(texture, new_piece_rect, down_rect, 1.0f);
 			break;
 		default:
 			break;
@@ -703,24 +731,41 @@ void PIECE_UI::rend(bool board_side_red)
 	}
 	else
 	{
-		float trans_y = map_line_y[BOARD_Y_MAX] - (posy - map_line_y[BOARD_Y_MIN]);
+		//apply delta_y
+		D2D1_RECT_F new_piece_rect =
+			D2D1::RectF(piece_rect[x][BOARD_Y_MAX - y].left, piece_rect[x][BOARD_Y_MAX - y].top + delta_y, piece_rect[x][BOARD_Y_MAX - y].right, piece_rect[x][BOARD_Y_MAX - y].bottom + delta_y);
+		//apply zoom_multiple
+		new_piece_rect.top -= (new_piece_rect.bottom - new_piece_rect.top) * zoom_multiple * 0.5f;
+		new_piece_rect.bottom += (new_piece_rect.bottom - new_piece_rect.top) * zoom_multiple * 0.5f;
+		new_piece_rect.left -= (new_piece_rect.right - new_piece_rect.left) * zoom_multiple * 0.5f;
+		new_piece_rect.right += (new_piece_rect.right - new_piece_rect.left) * zoom_multiple * 0.5f;
+
 		//reflect position y
+		float trans_y = map_line_y[BOARD_Y_MAX] - (posy - map_line_y[BOARD_Y_MIN]);
 		switch (status)
 		{
 		case CChessBase::PIECE_STATIC:
 			DrawBitmap_1(texture, piece_rect[x][BOARD_Y_MAX - y], static_rect, 1.0f);
 			break;
 		case CChessBase::PIECE_UP_MOVING:
-			DrawBitmap_1(texture, piece_rect[x][BOARD_Y_MAX - y], up_rect, 1.0f);
+			DrawBitmap_1(texture, new_piece_rect, down_rect, 1.0f);
 			break;
 		case CChessBase::PIECE_HANG:
-			DrawBitmap_1(texture, piece_rect[x][BOARD_Y_MAX - y], up_rect, 1.0f);
+			DrawBitmap_1(texture, new_piece_rect, down_rect, 1.0f);
 			break;
 		case CChessBase::PIECE_DOWN_MOVING:
-			DrawBitmap_1(texture, piece_rect[x][BOARD_Y_MAX - y], down_rect, 1.0f);
+			DrawBitmap_1(texture, new_piece_rect, down_rect, 1.0f);
 			break;
 		case CChessBase::PIECE_MOVING_TO:
-			DrawBitmap_1(texture, D2D1::RectF(posx - (map_line_x[1] - map_line_x[0]) * 0.5f, trans_y - (map_line_y[1] - map_line_y[0]) * 0.5f, posx + (map_line_x[1] - map_line_x[0]) * 0.5f, trans_y + (map_line_y[1] - map_line_y[0]) * 0.5f), up_rect, 1.0f);
+			DrawBitmap_1(texture, 
+				D2D1::RectF(posx - (map_line_x[1] - map_line_x[0]) * 0.5f, trans_y - (map_line_y[1] - map_line_y[0]) * 0.5f + delta_y, posx + (map_line_x[1] - map_line_x[0]) * 0.5f, trans_y + (map_line_y[1] - map_line_y[0]) * 0.5f + delta_y),
+				up_rect, 1.0f);
+			break;
+		case CChessBase::PIECE_MOVED_DOWN1:
+			DrawBitmap_1(texture, new_piece_rect, static_rect, 1.0f);
+			break;
+		case CChessBase::PIECE_MOVED_DOWN2:
+			DrawBitmap_1(texture, new_piece_rect, down_rect, 1.0f);
 			break;
 		default:
 			break;
@@ -738,34 +783,63 @@ void PIECE_UI::update(float timeScale)
 		break;
 	case CChessBase::PIECE_UP_MOVING:
 		moving_time -= frmtm * timeScale;
+		delta_y = (map_line_y[0] - map_line_y[1]) * (0.25f - moving_time) * 4 * DELTA_Y_FACTOR;
+		zoom_multiple = (0.25f - moving_time) * 4 * ZOOM_FACTOR;
 		if (moving_time <= 0)
 		{
 			status = PIECE_HANG;
 		}
 		break;
 	case CChessBase::PIECE_HANG:
+		delta_y = (map_line_y[0] - map_line_y[1]) * DELTA_Y_FACTOR;
+		zoom_multiple = ZOOM_FACTOR;
 		debugger_main.add_output_line("piece selected type= " + to_string(type) + " pos= " + to_string(x) + "," + to_string(y));
 		break;
 	case CChessBase::PIECE_DOWN_MOVING:
 		moving_time += frmtm * timeScale;
+		delta_y = (map_line_y[0] - map_line_y[1]) * (0.25f - moving_time) * 4 * DELTA_Y_FACTOR;
+		zoom_multiple = (0.25f - moving_time) * 4 * ZOOM_FACTOR;
 		if (moving_time >= 0.25f)
 		{
 			status = PIECE_STATIC;
 		}
 		break;
 	case CChessBase::PIECE_MOVING_TO:
-		moving_time += frmtm * timeScale;
+		moving_time += frmtm * timeScale * speed_multiple;
+		delta_y = (map_line_y[0] - map_line_y[1]) * DELTA_Y_FACTOR;
+		zoom_multiple = ZOOM_FACTOR;
 		if (moving_time >= 0.25f)
 		{
 			moving_time = 0;
-			status = PIECE_DOWN_MOVING;
+			status = PIECE_MOVED_DOWN1;
 			g_am.PlayEffectSound("move");
 		}
 		posx = map_line_x[currentMove.fromx] * (1 - moving_time * 4) + map_line_x[currentMove.tox] * moving_time * 4;
 		posy = map_line_y[BOARD_Y_MAX-currentMove.fromy] * (1 - moving_time * 4) + map_line_y[BOARD_Y_MAX-currentMove.toy] * moving_time * 4;
 		break;
+	case CChessBase::PIECE_MOVED_DOWN1:
+	case CChessBase::PIECE_MOVED_DOWN2:
+		moving_time += frmtm * timeScale * 1;
+		delta_y = (map_line_y[0] - map_line_y[1]) * (0.25f - moving_time) * 4 * DELTA_Y_FACTOR;
+		zoom_multiple = (0.25f - moving_time) * 4 * ZOOM_FACTOR;
+		if (moving_time >= 0.25f)
+		{
+			status = PIECE_STATIC;
+		}
+		else if (moving_time >= 0.125f)
+		{
+			status = PIECE_MOVED_DOWN2;
+		}
+		break;
+	
+
+		break;
 	default:
 		break;
+	}
+	if (current_side == SIDE_BLACK)
+	{
+		delta_y = -delta_y;
 	}
 	return;
 }
@@ -788,14 +862,11 @@ void PIECE_UI::UnSelect()
 
 void PIECE_UI::MoveTo(PieceMoveDesc move)
 {
-	//if (status != PIECE_HANG)
-	//{
-	//	return;
-	//}
 	currentMove = move;
 	status = PIECE_MOVING_TO;
 	moving_time = 0;
 	x = move.tox, y = move.toy;
+	speed_multiple = 1 / DISTANCE(move.fromx, move.fromy, move.tox, move.toy);
 	return;
 }
 
@@ -812,4 +883,9 @@ bool PIECE_UI::MatchPosition(int x, int y)
 		return 0;
 	}
 	return this->x==x&&this->y==y;
+}
+
+Piece_Move_Status PIECE_UI::GetStatus()
+{
+	return status;
 }
