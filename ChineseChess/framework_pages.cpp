@@ -113,7 +113,7 @@ void Start_Page::Update()
 
 void Start_Page::Rend()
 {
-    g_pD2DDeviceContext->Clear(D2D1::ColorF(D2D1::ColorF::LightGoldenrodYellow));
+    g_pD2DDeviceContext->Clear(D2D1::ColorF(D2D1::ColorF::Yellow));
     rects.rend(loading_progress_show);
 
     if (text_opacity < 2)

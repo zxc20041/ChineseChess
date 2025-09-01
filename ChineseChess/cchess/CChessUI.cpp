@@ -7,6 +7,7 @@ using namespace CChessBase;
 unordered_map<string, PIECE_ATLAS_INFO> PIECE_UI::piece_rect_set;
 D2D1_RECT_F PIECE_UI::piece_rect[BOARD_X_MAX + 1][BOARD_Y_MAX + 1];
 float PIECE_UI::map_line_x[BOARD_X_MAX + 1], PIECE_UI::map_line_y[BOARD_Y_MAX + 1];
+float PIECE_UI::light_posx = 0, PIECE_UI::light_posy = 0;
 bool PIECE_UI::current_side = SIDE_RED;
 
 CChessUI::CChessUI()
@@ -147,6 +148,7 @@ CChessUI::UIRender::UIRender()
 	block_length_y = (map_area_posy2 - map_area_posy1) / 9;
 	mark_lengthx_short = block_length_x * 0.05f, mark_lengthx_long = block_length_x * 0.2f;
 	mark_lengthy_short = block_length_y * 0.05f, mark_lengthy_long = block_length_y * 0.2f;
+	PIECE_UI::light_posx = (map_area_posx2 + map_area_posx1) * 0.5f, PIECE_UI::light_posy = (map_area_posy2 + map_area_posy1) * 0.5f;
 	for (int i = 0; i < 9; i++)
 	{
 		map_line_x[i] = map_area_posx1 + block_length_x * i;
@@ -226,7 +228,7 @@ void CChessUI::UIRender::RendPieces()
 	return;
 }
 
-void CChessUI::UIRender::RendBG()
+void CChessUI::UIRender::RendBG() const
 {
 	FillRoundedRectangle_1(board_rect.left, board_rect.top, board_rect.right, board_rect.bottom, g_rm.getBrush("bg board"), 1.0f);
 	
@@ -316,7 +318,7 @@ void CChessUI::UIRender::RendBG()
 	return;
 }
 
-void CChessUI::UIRender::RendEffect()
+void CChessUI::UIRender::RendEffect() const
 {
 	if (effect_time > 2)
 	{
@@ -577,13 +579,17 @@ PIECE_UI::PIECE_UI(int x, int y, ChessPieceType type, bool side_red)
 	this->x = x, this->y = y;
 	posx = map_line_x[x];
 	posy = map_line_y[BOARD_Y_MAX - y];
+	posz = 8;
+	ori_pos.x = posx, ori_pos.y = posy;
+	shandow_pos = D2D1::Point2F();
+	shandow_radiusx = 0, shandow_radiusy = 0, shandow_direction = 0, shandow_opacity = 0.5f;
 	delta_y = 0, zoom_multiple = 1, speed_multiple = 1;
 	this->type = type;
 	this->side_red = side_red;
 	status = Piece_Move_Status::PIECE_STATIC;
 	moving_time = 0;
 	currentMove = PieceMoveDesc();
-	static_rect = up_rect = down_rect = D2D1::RectF();
+	static_rect = up_rect = down_rect = new_piece_rect = D2D1::RectF();
 	if (side_red)
 	{
 		switch (type)
@@ -674,9 +680,10 @@ PIECE_UI::PIECE_UI(int x, int y, ChessPieceType type, bool side_red)
 			break;
 		}
 	}
+	UpdateShandow();
 }
 
-void PIECE_UI::rend(bool board_side_red)
+void PIECE_UI::rend(bool board_side_red) const
 {
 	if (x > BOARD_X_MAX || y > BOARD_Y_MAX)
 	{
@@ -687,18 +694,19 @@ void PIECE_UI::rend(bool board_side_red)
 	{
 		return;
 	}
+
+	//rend shandow
+	g_pD2DDeviceContext->SetTransform(D2D1::Matrix3x2F::Rotation(shandow_direction, shandow_pos));
+
+	FillEllipse_1(shandow_pos.x, shandow_pos.y, shandow_radiusx, shandow_radiusy, g_pBrushBlack, shandow_opacity);
+
+	g_pD2DDeviceContext->SetTransform(D2D1::Matrix3x2F::Identity());
+
+	//rend piece
 	ID2D1Bitmap* texture = g_rm.getTexture("pieces");
-	
+
 	if (board_side_red)
 	{
-		//apply delta_y
-		D2D1_RECT_F new_piece_rect =
-			D2D1::RectF(piece_rect[x][y].left, piece_rect[x][y].top + delta_y, piece_rect[x][y].right, piece_rect[x][y].bottom + delta_y);
-		//apply zoom_multiple
-		new_piece_rect.top -= (new_piece_rect.bottom - new_piece_rect.top) * zoom_multiple * 0.5f;
-		new_piece_rect.bottom += (new_piece_rect.bottom - new_piece_rect.top) * zoom_multiple * 0.5f;
-		new_piece_rect.left -= (new_piece_rect.right - new_piece_rect.left) * zoom_multiple * 0.5f;
-		new_piece_rect.right += (new_piece_rect.right - new_piece_rect.left) * zoom_multiple  * 0.5f;
 		switch (status)
 		{
 		case CChessBase::PIECE_STATIC:
@@ -714,7 +722,7 @@ void PIECE_UI::rend(bool board_side_red)
 			DrawBitmap_1(texture, new_piece_rect, down_rect, 1.0f);
 			break;
 		case CChessBase::PIECE_MOVING_TO:
-			DrawBitmap_1(texture, 
+			DrawBitmap_1(texture,
 				D2D1::RectF(posx - (map_line_x[1] - map_line_x[0]) * 0.5f, posy - (map_line_y[1] - map_line_y[0]) * 0.5f + delta_y, posx + (map_line_x[1] - map_line_x[0]) * 0.5f, posy + (map_line_y[1] - map_line_y[0]) * 0.5f + delta_y),
 				up_rect, 1.0f);
 			break;
@@ -727,19 +735,10 @@ void PIECE_UI::rend(bool board_side_red)
 		default:
 			break;
 		}
-		
+
 	}
 	else
 	{
-		//apply delta_y
-		D2D1_RECT_F new_piece_rect =
-			D2D1::RectF(piece_rect[x][BOARD_Y_MAX - y].left, piece_rect[x][BOARD_Y_MAX - y].top + delta_y, piece_rect[x][BOARD_Y_MAX - y].right, piece_rect[x][BOARD_Y_MAX - y].bottom + delta_y);
-		//apply zoom_multiple
-		new_piece_rect.top -= (new_piece_rect.bottom - new_piece_rect.top) * zoom_multiple * 0.5f;
-		new_piece_rect.bottom += (new_piece_rect.bottom - new_piece_rect.top) * zoom_multiple * 0.5f;
-		new_piece_rect.left -= (new_piece_rect.right - new_piece_rect.left) * zoom_multiple * 0.5f;
-		new_piece_rect.right += (new_piece_rect.right - new_piece_rect.left) * zoom_multiple * 0.5f;
-
 		//reflect position y
 		float trans_y = map_line_y[BOARD_Y_MAX] - (posy - map_line_y[BOARD_Y_MIN]);
 		switch (status)
@@ -757,7 +756,7 @@ void PIECE_UI::rend(bool board_side_red)
 			DrawBitmap_1(texture, new_piece_rect, down_rect, 1.0f);
 			break;
 		case CChessBase::PIECE_MOVING_TO:
-			DrawBitmap_1(texture, 
+			DrawBitmap_1(texture,
 				D2D1::RectF(posx - (map_line_x[1] - map_line_x[0]) * 0.5f, trans_y - (map_line_y[1] - map_line_y[0]) * 0.5f + delta_y, posx + (map_line_x[1] - map_line_x[0]) * 0.5f, trans_y + (map_line_y[1] - map_line_y[0]) * 0.5f + delta_y),
 				up_rect, 1.0f);
 			break;
@@ -780,6 +779,7 @@ void PIECE_UI::update(float timeScale)
 	{
 	case CChessBase::PIECE_STATIC:
 		moving_time = 0.25f;
+		ori_pos.x = map_line_x[x], ori_pos.y = map_line_y[BOARD_Y_MAX - y];
 		break;
 	case CChessBase::PIECE_UP_MOVING:
 		moving_time -= frmtm * timeScale;
@@ -789,6 +789,8 @@ void PIECE_UI::update(float timeScale)
 		{
 			status = PIECE_HANG;
 		}
+		ori_pos.x = map_line_x[x], ori_pos.y = map_line_y[BOARD_Y_MAX - y] - delta_y * 0.5f;
+		UpdateShandow();
 		break;
 	case CChessBase::PIECE_HANG:
 		delta_y = (map_line_y[0] - map_line_y[1]) * DELTA_Y_FACTOR;
@@ -803,19 +805,25 @@ void PIECE_UI::update(float timeScale)
 		{
 			status = PIECE_STATIC;
 		}
+		ori_pos.x = map_line_x[x], ori_pos.y = map_line_y[BOARD_Y_MAX - y] - delta_y * 0.5f;
+		UpdateShandow();
 		break;
 	case CChessBase::PIECE_MOVING_TO:
 		moving_time += frmtm * timeScale * speed_multiple;
 		delta_y = (map_line_y[0] - map_line_y[1]) * DELTA_Y_FACTOR;
 		zoom_multiple = ZOOM_FACTOR;
+		
+		posx = map_line_x[currentMove.fromx] * (1 - moving_time * 4) + map_line_x[currentMove.tox] * moving_time * 4;
+		posy = map_line_y[BOARD_Y_MAX - currentMove.fromy] * (1 - moving_time * 4) + map_line_y[BOARD_Y_MAX - currentMove.toy] * moving_time * 4;
+		ori_pos.x = posx, ori_pos.y = posy - delta_y * 0.5f;
+		UpdateShandow();
+
 		if (moving_time >= 0.25f)
 		{
 			moving_time = 0;
 			status = PIECE_MOVED_DOWN1;
 			g_am.PlayEffectSound("move");
 		}
-		posx = map_line_x[currentMove.fromx] * (1 - moving_time * 4) + map_line_x[currentMove.tox] * moving_time * 4;
-		posy = map_line_y[BOARD_Y_MAX-currentMove.fromy] * (1 - moving_time * 4) + map_line_y[BOARD_Y_MAX-currentMove.toy] * moving_time * 4;
 		break;
 	case CChessBase::PIECE_MOVED_DOWN1:
 	case CChessBase::PIECE_MOVED_DOWN2:
@@ -830,9 +838,8 @@ void PIECE_UI::update(float timeScale)
 		{
 			status = PIECE_MOVED_DOWN2;
 		}
-		break;
-	
-
+		ori_pos.x = map_line_x[x], ori_pos.y = map_line_y[BOARD_Y_MAX - y] - delta_y * 0.5f;
+		UpdateShandow();
 		break;
 	default:
 		break;
@@ -840,8 +847,26 @@ void PIECE_UI::update(float timeScale)
 	if (current_side == SIDE_BLACK)
 	{
 		delta_y = -delta_y;
+
+		ori_pos.y -= delta_y;
+		//apply delta_y
+		new_piece_rect =
+			D2D1::RectF(piece_rect[x][BOARD_Y_MAX - y].left, piece_rect[x][BOARD_Y_MAX - y].top + delta_y, piece_rect[x][BOARD_Y_MAX - y].right, piece_rect[x][BOARD_Y_MAX - y].bottom + delta_y);
+
 	}
+	else
+	{
+		//apply delta_y
+		new_piece_rect =
+			D2D1::RectF(piece_rect[x][y].left, piece_rect[x][y].top + delta_y, piece_rect[x][y].right, piece_rect[x][y].bottom + delta_y);
+	}
+	//apply zoom_multiple
+	new_piece_rect.top -= (new_piece_rect.bottom - new_piece_rect.top) * zoom_multiple * 0.5f;
+	new_piece_rect.bottom += (new_piece_rect.bottom - new_piece_rect.top) * zoom_multiple * 0.5f;
+	new_piece_rect.left -= (new_piece_rect.right - new_piece_rect.left) * zoom_multiple * 0.5f;
+	new_piece_rect.right += (new_piece_rect.right - new_piece_rect.left) * zoom_multiple * 0.5f;
 	return;
+
 }
 
 void PIECE_UI::Select()
@@ -876,7 +901,7 @@ void PIECE_UI::Die()
 	return;
 }
 
-bool PIECE_UI::MatchPosition(int x, int y)
+bool PIECE_UI::MatchPosition(int x, int y) const
 {
 	if (status == PIECE_DIED)
 	{
@@ -885,7 +910,44 @@ bool PIECE_UI::MatchPosition(int x, int y)
 	return this->x==x&&this->y==y;
 }
 
-Piece_Move_Status PIECE_UI::GetStatus()
+Piece_Move_Status PIECE_UI::GetStatus() const
 {
 	return status;
+}
+
+void PIECE_UI::UpdateShandow()
+{
+	//D2D1_POINT_2F ori_pos = D2D1::Point2F(posx, posy);
+	D2D1_POINT_2F shandow_rect_top, shandow_rect_bottom, shandow_rect_left, shandow_rect_right;
+	D2D1_POINT_2F ori_rect_top{}, ori_rect_bottom{}, ori_rect_left{}, ori_rect_right{};
+	D2D1_RECT_F current_rect = D2D1::RectF(
+		posx - (piece_rect[0][0].right - piece_rect[0][0].left) * 0.5f, posy - (piece_rect[0][0].bottom - piece_rect[0][0].top) * 0.5f,
+		posx + (piece_rect[0][0].right - piece_rect[0][0].left) * 0.5f, posy + (piece_rect[0][0].bottom - piece_rect[0][0].top) * 0.5f);
+	string before = "before transform: rx=" + to_string(current_rect.right - current_rect.left) + " ry=" + to_string(current_rect.bottom - current_rect.top);
+	debugger_main.add_output_line(before);
+	shandow_direction = atan2f(light_posy - posy, light_posx - posx);
+
+	ori_rect_top.x = posx + cosf(shandow_direction) * (current_rect.right - current_rect.left) * 0.5f, ori_rect_top.y = posy + sinf(shandow_direction) * (current_rect.bottom - current_rect.top) * 0.5f;
+	ori_rect_bottom.x = posx - cosf(shandow_direction) * (current_rect.right - current_rect.left) * 0.5f, ori_rect_bottom.y = posy - sinf(shandow_direction) * (current_rect.bottom - current_rect.top) * 0.5f;
+	ori_rect_left.x = posx + cosf(shandow_direction + 0.5f * PI) * (current_rect.right - current_rect.left) * 0.5f, ori_rect_left.y = posy + sinf(shandow_direction + 0.5f * PI) * (current_rect.bottom - current_rect.top) * 0.5f;
+	ori_rect_right.x = posx - cosf(shandow_direction + 0.5f * PI) * (current_rect.right - current_rect.left) * 0.5f, ori_rect_right.y = posy - sinf(shandow_direction + 0.5f * PI) * (current_rect.bottom - current_rect.top) * 0.5f;
+
+	TransformPoint(ori_rect_top, shandow_rect_top);
+	TransformPoint(ori_rect_bottom, shandow_rect_bottom);
+	TransformPoint(ori_rect_left, shandow_rect_left);
+	TransformPoint(ori_rect_right, shandow_rect_right);
+	TransformPoint(ori_pos, shandow_pos);
+
+	shandow_radiusx = DISTANCE(shandow_rect_left.x, shandow_rect_left.y, shandow_rect_right.x, shandow_rect_right.y) * 0.5f;
+	shandow_radiusy = DISTANCE(shandow_rect_top.x, shandow_rect_top.y, shandow_rect_bottom.x, shandow_rect_bottom.y) * 0.5f;
+	string after = "after transform: rx=" + to_string(shandow_radiusx) + " ry=" + to_string(shandow_radiusy) + " direction=" + to_string(shandow_direction);
+	debugger_main.add_output_line(after);
+	return;
+}
+
+void PIECE_UI::TransformPoint(D2D1_POINT_2F& ori, D2D1_POINT_2F& trans) const
+{
+	trans.x = ori.x + (ori.x - light_posx) * posz / (LIGHT_POSZ - posz);
+	trans.y = ori.y + (ori.y - light_posy) * posz / (LIGHT_POSZ - posz);
+	return;
 }
