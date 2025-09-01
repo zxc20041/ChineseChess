@@ -15,7 +15,7 @@ CChessLocalPVE::~CChessLocalPVE()
 
 void CChessLocalPVE::Update()
 {
-	/*if (update_check_win)
+	if (update_check_win)
 	{
 		EngineResult r = engineAdapter.GetResult();
 		if (r.valid)
@@ -29,8 +29,7 @@ void CChessLocalPVE::Update()
 			result = r;
 			update_check_win = 0;
 		}
-	}*/
-	CChessLocalPVP::Update();
+	}
 
 	return;
 }

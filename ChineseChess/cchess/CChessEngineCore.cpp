@@ -149,6 +149,7 @@ vector<PiecePosDesc> CChessEngine::GetAvailableSteps(PiecePosDesc pos)
 	bool cannon_jump_piece = 0;
 	vector<PiecePosDesc> result;
 
+	//fixme: ObeyRule_KingMeetKing always return 1
 	if (this_side != current_side_red )
 	{
 		return vector<PiecePosDesc>();
@@ -470,6 +471,7 @@ vector<PiecePosDesc> CChessEngine::GetAvailableSteps(PiecePosDesc pos)
 		}
 		break;
 	case CChessBase::PIECE_KING:
+		//fixme: ObeyRule_KingMeetKing_for_king always return 1
 		if (NotMySide(pos.x + 1, pos.y, this_side) && ObeyRule_KingMeetKing_for_king(pos.x + 1, pos.y))
 		{
 			result.emplace_back(pos.x + 1, pos.y);

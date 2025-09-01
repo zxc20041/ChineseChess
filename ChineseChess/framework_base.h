@@ -446,7 +446,7 @@ private:
 
     TEXT_RESOURCE* texts[TEXT_MAX];
 
-    shared_ptr<RESOURCE_INFO> res_info[RES_MAX];
+    RESOURCE_INFO* res_info[RES_MAX];
 
 
     int res_num;

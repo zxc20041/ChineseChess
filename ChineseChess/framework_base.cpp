@@ -339,13 +339,13 @@ ResourceManager::~ResourceManager()
             delete i;
         }
     }
-    /*for (auto &i : res_info)
+    for (auto &i : res_info)
     {
         if (i != nullptr)
         {
             delete i;
         }
-    }*/
+    }
 }
 
 
@@ -362,7 +362,7 @@ void ResourceManager::AddResource(string aliasName, string filePath, string md5,
         }
     }
 
-    res_info[res_num] = make_shared<RESOURCE_INFO>(aliasName, filePath, ResourceType::Resource_Texture, md5, texture_desc, FONT_DESC(), TEXT_DESC(), AUDIO_DESC());
+    res_info[res_num] = new RESOURCE_INFO(aliasName, filePath, ResourceType::Resource_Texture, md5, texture_desc, FONT_DESC(), TEXT_DESC(), AUDIO_DESC());
     res_num++;
     return;
 }
@@ -388,7 +388,7 @@ void ResourceManager::AddResource(string aliasName, string filePath, string md5,
         debugger_main.writelog(DWARNNING, "Load Font Resource failed! " + filePath, __LINE__);
     }
     PostMessage(HWND_BROADCAST, WM_FONTCHANGE, 0, 0);
-    res_info[res_num] = make_shared<RESOURCE_INFO>(aliasName, filePath, ResourceType::Resource_Font, md5, TEXTURE_DESC(), font_desc, TEXT_DESC(), AUDIO_DESC());
+    res_info[res_num] = new RESOURCE_INFO(aliasName, filePath, ResourceType::Resource_Font, md5, TEXTURE_DESC(), font_desc, TEXT_DESC(), AUDIO_DESC());
     res_num++;
 
     return;
@@ -407,7 +407,7 @@ void ResourceManager::AddResource(string aliasName, string filePath, string md5,
         }
     }
 
-    res_info[res_num] = make_shared<RESOURCE_INFO>(aliasName, filePath, ResourceType::Resource_Text, md5, TEXTURE_DESC(), FONT_DESC(), text_desc, AUDIO_DESC());
+    res_info[res_num] = new RESOURCE_INFO(aliasName, filePath, ResourceType::Resource_Text, md5, TEXTURE_DESC(), FONT_DESC(), text_desc, AUDIO_DESC());
     res_num++;
 
     return;
@@ -426,7 +426,7 @@ void ResourceManager::AddResource(string aliasName, string filePath, string md5,
         }
     }
 
-    res_info[res_num] = make_shared<RESOURCE_INFO>(aliasName, filePath, ResourceType::Resource_Audio, md5, TEXTURE_DESC(), FONT_DESC(), TEXT_DESC(), audio_desc);
+    res_info[res_num] = new RESOURCE_INFO(aliasName, filePath, ResourceType::Resource_Audio, md5, TEXTURE_DESC(), FONT_DESC(), TEXT_DESC(), audio_desc);
     res_num++;
 
     return;
@@ -696,7 +696,7 @@ bool ResourceManager::LoadAll_implementation()
             continue;
         }
         
-        if (!verifyFile(i.get()))
+        if (!verifyFile(i))
         {
             debugger_main.writelog(DWARNNING, "verify File failed: " + i->filePath, __LINE__);
 
@@ -706,16 +706,16 @@ bool ResourceManager::LoadAll_implementation()
         switch (i->type)
         {
         case ResourceType::Resource_Texture:
-            success = LoadTexture(i.get());
+            success = LoadTexture(i);
             break;
         case ResourceType::Resource_Font:
-            success = LoadFont(i.get());
+            success = LoadFont(i);
             break;
         case ResourceType::Resource_Text:
-            success = LoadText(i.get());
+            success = LoadText(i);
             break;
         case ResourceType::Resource_Audio:
-            success = LoadAudio(i.get());
+            success = LoadAudio(i);
             break;
         default:
             debugger_main.writelog(DWARNNING, "unknown res type in ResourceManager::LoadAll_implementation() ", __LINE__);
@@ -735,7 +735,7 @@ bool ResourceManager::LoadAll_implementation()
             continue;
         }
         loaded_cnt++;
-        //delete i;
+        delete i;
         i = nullptr;
     }
     debugger_main.writelog(DDEBUG, "successfully finish ResourceManager::LoadAll_implementation() " + to_string(loaded_cnt), __LINE__);
@@ -750,7 +750,7 @@ void ResourceManager::releaseAll_implementation()
         {
             continue;
         }
-        //delete i;
+        delete i;
         i = nullptr;
     }
     for (auto& i : textureMap)

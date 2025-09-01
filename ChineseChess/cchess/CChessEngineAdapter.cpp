@@ -16,7 +16,7 @@ CChessEngineAdapter::CChessEngineAdapter()
     elo = 0, enable_LimitStrength = 1, hash_size = 64;
     status = ENGINE_STATUS::E_INIT;
     stepTime = 0, targetStepTime = 5;
-    bestMoveRecv = 0, noBestMove = 0, mate = 0, uciOK = 0, mateRecv = 0, checkmate = 0, availableStepsFound = 0;
+    bestMoveRecv = 0, noBestMove = 0, mate = 0, uciOK = 0, mateRecv = 0;
     thread_num = 8, targetStepDepth = 24;
     drop_bestMove_required = 0;
     currentPosInMove = "position startpos moves";
@@ -44,26 +44,17 @@ void CChessEngineAdapter::Reset()
         write_input("quit");
     }
     drop_bestMove_required = 0;
-    bestMoveRecv = 0, noBestMove = 0, mate = 0, uciOK = 0, mateRecv = 0, checkmate = 0, availableStepsFound = 0;
-
+    bestMoveRecv = 0, noBestMove = 0, mate = 0, uciOK = 0, mateRecv = 0;
     //start process
-    try
-    {
-        proc = bp::child(
-                exeFileNames[0],
-                bp::args({ argument }),
-                bp::windows::create_no_window,
-                bp::std_in < in,
-                bp::std_out > out,
-                io_ctx
-            );
-    }
-    catch (exception e)
-    {
-        debugger_main.writelog(DWARNNING, "failed to start process " + exeFileNames[0] + " " + e.what(), __LINE__);
-        return;
-    }
-
+    proc = bp::child(
+        exeFileNames[0],
+        bp::args({ argument }),
+        bp::windows::create_no_window,
+        bp::std_in < in,
+        bp::std_out > out,
+        io_ctx
+    );
+    //proc.reset(new bp::popen(io_ctx, exeFileNames[0], { argument }));
     if (!proc.running())
     {
         debugger_main.writelog(DWARNNING, "failed to start process " + exeFileNames[0], __LINE__);
@@ -90,19 +81,6 @@ void CChessEngineAdapter::Reset()
 
     //set option and enter uci
     write_input("uci");
-    int wait_time = 0;
-    while (!uciOK.load())
-    {
-        Sleep(10);
-        wait_time++;
-        if (wait_time > 300)
-        {
-            debugger_main.writelog(DWARNNING, "process no response for uciOK timeout " + exeFileNames[0], __LINE__);
-            g_PageManager.SwitchPageTo(PAGE_HOME);
-            return;
-        }
-    }
-
 #ifdef _DEBUG
     write_input("setoption name Debug Log File value PikaFishLog.txt");
 #endif // DEBUG 
@@ -146,10 +124,10 @@ void CChessEngineAdapter::MovePiece(CChessBase::PieceMoveDesc move)
     }
 
     //÷ÿ÷√±‰¡ø
-    bestMoveRecv = 0, noBestMove = 0, mate = 0, mateRecv = 0, checkmate = 0, availableStepsFound = 0;
+    bestMoveRecv = 0, noBestMove = 0, mate = 0, mateRecv = 0;
     stepTime = 0;
     bestMove = { -1,-1,-1,-1 };
-    availableSteps.clear();
+
 
     currentPosInMove += " ";
     currentPosInMove += (char)move.fromx + 'a';
@@ -160,8 +138,7 @@ void CChessEngineAdapter::MovePiece(CChessBase::PieceMoveDesc move)
     //send cmd
     write_input(currentPosInMove);
     drop_bestMove_required++;
-    write_input("go depth 3");  //check if mate
-    write_input("go perft 1");  //get avaliable positions
+    write_input("go depth 1");  //check if mate
     return;
 }
 
@@ -179,12 +156,6 @@ EngineResult CChessEngineAdapter::GetResult()
         r.result = RESULT_MATE;
         r.valid = 1;
         noBestMove = 0, mate = 0;
-    }
-    else if (checkmate)
-    {
-        r.result = RESULT_CHECK;
-        r.valid = 1;
-        checkmate = 0;
     }
     return r;
 }
@@ -210,16 +181,6 @@ CChessBase::PieceMoveDesc CChessEngineAdapter::GetBestMove()
         return PieceMoveDesc();
     }
     return bestMove;
-}
-
-bool CChessEngineAdapter::CheckAvailableSteps()
-{
-    return availableStepsFound.load();
-}
-
-std::vector<PieceMoveDesc> CChessEngineAdapter::GetAvailableSteps()
-{
-    return availableSteps;
 }
 
 void CChessEngineAdapter::SearchBestMove()
@@ -249,8 +210,7 @@ void CChessEngineAdapter::read_output(string line)
     {
         return;
     }
-    //debugger_main.writelog(DDEBUG, "read_output from proc: " + line, __LINE__);
-    
+    debugger_main.writelog(DDEBUG, "read_output from proc: " + line, __LINE__);
     if (line.find("uciok") != string::npos)
     {
         uciOK = 1;
@@ -293,20 +253,6 @@ void CChessEngineAdapter::read_output(string line)
     else if (line.find("score mate 0") != string::npos)
     {
         mate = 1;
-    }
-    else if (line.find("mate 1") != string::npos)
-    {
-        checkmate = 1;
-    }
-    else if (line.find(": 1") != string::npos)
-    {
-        availableSteps.push_back(PieceMoveDesc{ line[0] - 'a', line[1] - '0',line[2] - 'a', line[3] - '0' });
-    }
-    else if (line.find("Nodes searched:") != string::npos)
-    {
-        find_pos = line.find("Nodes searched:");
-        int nodes_num = stoi(line.substr(find_pos + sizeof("Nodes searched: ") - 1));
-        debugger_main.writelog(DDEBUG, "perft Nodes searched: " + to_string(nodes_num), __LINE__);
     }
     return;
 }
