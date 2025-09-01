@@ -19,7 +19,7 @@ public:
 protected:
 	std::vector<CChessBase::PiecePosDesc> availablePositions[9][10];
 
-	bool update_check_win, match_over, win_side;
+	bool update_check_win, match_over, win_side, update_check_result;
 	CChessBase::EngineResult result;
 
 	virtual bool CheckBestMove() override;

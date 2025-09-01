@@ -17,28 +17,35 @@ class PIECE_UI
 {
 public:
 	PIECE_UI(int x,int y, ChessPieceType type,bool side_red);
-	void rend(bool board_side_red);
+	void rend(bool board_side_red) const;
 	void update(float timeScale);
 	void Select();
 	void UnSelect();
 	void MoveTo(PieceMoveDesc move);
 	void Die();
-	bool MatchPosition(int x, int y);
-	Piece_Move_Status GetStatus();
+	bool MatchPosition(int x, int y) const;
+	Piece_Move_Status GetStatus() const;
 	static unordered_map<string, PIECE_ATLAS_INFO> piece_rect_set;
 	static D2D1_RECT_F piece_rect[BOARD_X_MAX + 1][BOARD_Y_MAX + 1];
 	static float map_line_x[BOARD_X_MAX + 1], map_line_y[BOARD_Y_MAX + 1];
+	static float light_posx, light_posy;
 	static bool current_side;
 private:
+	void UpdateShandow();
+	void TransformPoint(D2D1_POINT_2F& ori, D2D1_POINT_2F& trans) const;
 	static constexpr float DELTA_Y_FACTOR = 0.25F, ZOOM_FACTOR = 0.25F, SPEED_FACTOR = 1;
+	static constexpr float LIGHT_POSZ = 128, PIECE_DEFAULT_POSZ = 8;	//assume shandow posz at 0
 	int x, y;
-	float posx, posy, delta_y, zoom_multiple/*0-ZOOM_FACTOR, offset multiple*/, speed_multiple;
+	float posx, posy, delta_y, zoom_multiple/*0-ZOOM_FACTOR, zoom offset multiple*/, speed_multiple;
 	float moving_time;
+	float shandow_radiusx, shandow_radiusy, shandow_direction, shandow_opacity, posz;
+	D2D1_POINT_2F shandow_pos;
 	bool side_red;
 	Piece_Move_Status status;
 	ChessPieceType type;
 
 	D2D1_RECT_F static_rect, up_rect, down_rect;
+	D2D1_RECT_F new_piece_rect;
 	PieceMoveDesc currentMove;
 };
 
@@ -73,8 +80,8 @@ protected:
 
 		void Update();
 		void RendPieces();
-		void RendBG();
-		void RendEffect();
+		void RendBG() const;
+		void RendEffect() const;
 		void RendMark();
 		void Reset();
 		bool LoadPiecesAtlasInfo();

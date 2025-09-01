@@ -32,7 +32,8 @@ protected:
 	CChessBase::CChessMap map;
 
 	bool side_red, current_side_red;
-	
+	//todo: fill AvailableSteps in Update() by engineAdapter
+	//std::shared_ptr<std::vector<CChessBase::PiecePosDesc>> AvailableSteps[9][10];
 	CChessEngineAdapter engineAdapter;
 private:
 	bool NotMySide(int x, int y, bool my_side);

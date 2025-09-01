@@ -6,7 +6,7 @@ using namespace debugger;
 
 CChessLocalPVP::CChessLocalPVP():CChessEngine()
 {
-	update_check_win = 0, match_over = 0, win_side = 0;
+	update_check_win = 0, match_over = 0, win_side = 0, update_check_result = 0;
 }
 
 CChessLocalPVP::~CChessLocalPVP()
@@ -90,6 +90,18 @@ void CChessLocalPVP::Update()
 			result = r;
 			update_check_win = 0;
 		}
+	}
+	if (update_check_result)
+	{
+		/*for (auto& i :availablePositions)
+		{	
+			for (auto& j : i)
+			{
+				j.clear();
+			}
+		}*/
+		//update availablePositions
+		update_check_result = 0;
 	}
 	return;
 }
