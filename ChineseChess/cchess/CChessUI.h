@@ -34,7 +34,7 @@ private:
 	void UpdateShandow();
 	void TransformPoint(D2D1_POINT_2F& ori, D2D1_POINT_2F& trans) const;
 	static constexpr float DELTA_Y_FACTOR = 0.25F, ZOOM_FACTOR = 0.25F, SPEED_FACTOR = 1;
-	static constexpr float LIGHT_POSZ = 512, PIECE_DEFAULT_POSZ = 8;	//assume shandow posz at 0
+	static constexpr float LIGHT_POSZ = 2048, PIECE_DEFAULT_POSZ = 8, POSZ_ZOOM_FACTOR = 50;	//assume shandow posz at 0
 	int x, y;
 	float posx, posy, delta_y, zoom_multiple/*0-ZOOM_FACTOR, zoom offset multiple*/, speed_multiple;
 	float moving_time;
@@ -109,6 +109,7 @@ protected:
 			MATE
 		};
 		
+		//availablePosition mark radius
 		float radius_ratio;
 		float timeScale;
 		unique_ptr<PIECE_UI> pieces[PIECE_NUM_MAX];

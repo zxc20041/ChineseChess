@@ -829,10 +829,10 @@ extern ID2D1SolidColorBrush* g_pBrushPink;
 extern ID2D1SolidColorBrush* g_pBrushWhite;
 extern ID2D1SolidColorBrush* g_pBrushNetwork;
 extern ID2D1SolidColorBrush* g_pBrushGameTemp;
-extern ID2D1LinearGradientBrush* g_pLinearGradientBrush;
+//extern ID2D1LinearGradientBrush* g_pLinearGradientBrush;
 extern ID2D1RadialGradientBrush* g_pRadialGradientBrush;
-extern ID2D1RadialGradientBrush* g_pRadialGradientBrush2;
-extern ID2D1RadialGradientBrush* g_pRadialGradientBrush3;
+//extern ID2D1RadialGradientBrush* g_pRadialGradientBrush2;
+//extern ID2D1RadialGradientBrush* g_pRadialGradientBrush3;
 
 extern ID2D1BitmapBrush1* g_pBitmapBrushUI[20];
 

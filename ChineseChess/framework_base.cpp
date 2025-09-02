@@ -76,10 +76,10 @@ ID2D1SolidColorBrush* g_pBrushWhite = NULL;
 ID2D1SolidColorBrush* g_pBrushNetwork = NULL;
 ID2D1SolidColorBrush* g_pBrushGameTemp = NULL;
 
-ID2D1LinearGradientBrush* g_pLinearGradientBrush = NULL;
+//ID2D1LinearGradientBrush* g_pLinearGradientBrush = NULL;
 ID2D1RadialGradientBrush* g_pRadialGradientBrush = NULL;
-ID2D1RadialGradientBrush* g_pRadialGradientBrush2 = NULL;
-ID2D1RadialGradientBrush* g_pRadialGradientBrush3 = NULL;
+//ID2D1RadialGradientBrush* g_pRadialGradientBrush2 = NULL;
+//ID2D1RadialGradientBrush* g_pRadialGradientBrush3 = NULL;
 
 ID2D1BitmapBrush1* g_pBitmapBrushUI[20] = { NULL };
 
@@ -3558,50 +3558,18 @@ void CreateD2DResource()
             debugger_main.writelog(DERROR, "FAILED to CreateStrokeStyle", __LINE__);
         }
         
-        D2D1_GRADIENT_STOP gradientStops[2];
-        gradientStops[0].color = D2D1::ColorF(D2D1::ColorF::White);
+        D2D1_GRADIENT_STOP gradientStops[3];
+        gradientStops[0].color = D2D1::ColorF(0, 0, 0, 1);
         gradientStops[0].position = 0.0f;
-        gradientStops[1].color = D2D1::ColorF(D2D1::ColorF::Black);
-        gradientStops[1].position = 1.0f;
+        gradientStops[1].color = D2D1::ColorF(0, 0, 0, 1);
+        gradientStops[1].position = 0.5f;
+        gradientStops[2].color = D2D1::ColorF(0, 0, 0, 0);
+        gradientStops[2].position = 1.0f;
         ID2D1GradientStopCollection* pGradientStops = NULL;
         // Create gradient stops collection
         hr = g_pD2DDeviceContext->CreateGradientStopCollection(
             gradientStops,
-            2,
-            D2D1_GAMMA_2_2,
-            D2D1_EXTEND_MODE_CLAMP,
-            &pGradientStops
-        );
-        if (FAILED(hr))
-        {
-            writelog("Create gradient stops collection failed!");
-            quit_single = 1;
-            return;
-        }
-
-
-        // Create a linear gradient brush to fill in the rectangle
-        hr = g_pD2DDeviceContext->CreateLinearGradientBrush(
-            D2D1::LinearGradientBrushProperties(
-                D2D1::Point2F(0, 0),
-                D2D1::Point2F(to_screen(1600), to_screen(900))),
-            pGradientStops,
-            &g_pLinearGradientBrush
-        );
-
-        if (FAILED(hr))
-        {
-            writelog("Create Linear gradient brush failed!");
-            quit_single = 1;
-            return;
-        }
-        g_pLinearGradientBrush->SetOpacity(0.4f);
-        gradientStops[0].color = D2D1::ColorF(D2D1::ColorF::LightGreen);
-        gradientStops[1].color = D2D1::ColorF(D2D1::ColorF::DarkGreen);
-        SAFE_RELEASE(pGradientStops)
-        hr = g_pD2DDeviceContext->CreateGradientStopCollection(
-            gradientStops,
-            2,
+            3,
             D2D1_GAMMA_2_2,
             D2D1_EXTEND_MODE_CLAMP,
             &pGradientStops
@@ -3616,7 +3584,7 @@ void CreateD2DResource()
             D2D1::RadialGradientBrushProperties(
                 D2D1::Point2F(to_screen(0), to_screen(0)),
                 D2D1::Point2F(to_screen(0), to_screen(0)),
-                to_screen(50), to_screen(50)),
+                to_screen(45), to_screen(45)),
             pGradientStops,
             &g_pRadialGradientBrush
         );
@@ -3626,54 +3594,12 @@ void CreateD2DResource()
             quit_single = 1;
             return;
         }
-        /*hr = g_pD2DDeviceContext->CreateRadialGradientBrush(
-            D2D1::RadialGradientBrushProperties(
-                D2D1::Point2F(0, 0),
-                D2D1::Point2F(0, 0),
-                to_screen(40), to_screen(40)),
-            pGradientStops,
-            &g_pRadialGradientBrush2
-        );
-        if (FAILED(hr))
-        {
-            writelog("Create Radial gradient brush failed!");
-            quit_single = 1;
-            return;
-        }*/
-        gradientStops[0].color = D2D1::ColorF(D2D1::ColorF(0, 0.0f));
-        gradientStops[1].color = D2D1::ColorF(D2D1::ColorF::Red);
+
         SAFE_RELEASE(pGradientStops)
-        hr = g_pD2DDeviceContext->CreateGradientStopCollection(
-            gradientStops,
-            2,
-            D2D1_GAMMA_2_2,
-            D2D1_EXTEND_MODE_CLAMP,
-            &pGradientStops
-        );
-        if (FAILED(hr))
-        {
-            writelog("Create gradient stops collection failed!");
-            quit_single = 1;
-            return;
-        }
-        hr = g_pD2DDeviceContext->CreateRadialGradientBrush(
-            D2D1::RadialGradientBrushProperties(
-                D2D1::Point2F(to_screen(800), to_screen(450)),
-                D2D1::Point2F(0, 0),
-                to_screen(800), to_screen(450)),
-            pGradientStops,
-            &g_pRadialGradientBrush2
-        );
-        if (FAILED(hr))
-        {
-            writelog("Create Radial gradient brush failed!");
-            quit_single = 1;
-            return;
-        }
         
-        SAFE_RELEASE(pGradientStops);
         debugger_main.writelog(0,"d2d stage2 passed.");
 
+        //todo: add LoadResolutionRalatedResources() and call when change resolution
         
         LoadFonts();
         
