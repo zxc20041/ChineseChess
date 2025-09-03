@@ -19,6 +19,7 @@ public:
 
 
 private:
+    void CreateAndAddBrush();
     shared_ptr<Button> switchSideButton, returnButton;
     std::future<void> task;
     unique_ptr<CChessUI> CUI;

@@ -407,6 +407,7 @@ public:
     void AddResource(string aliasName, string filePath, string md5, FONT_DESC font_desc);
     void AddResource(string aliasName, string filePath, string md5, TEXT_DESC text_desc);
     void AddResource(string aliasName, string filePath, string md5, AUDIO_DESC audio_desc);
+    void AddBrush(string aliasName, ID2D1Brush* brush);
     
     void LoadAll(); //async
     void ReleaseAll(); //async
@@ -415,7 +416,7 @@ public:
 
 
     ID2D1Bitmap* getTexture(string aliasName);
-    ID2D1BitmapBrush1* getBrush(string aliasName);
+    ID2D1Brush* getBrush(string aliasName);
     shared_ptr<SE_INFO> getAudio(string aliasName);
     IDWriteTextFormat* getFont(string aliasName);
     int getFontIndex(string aliasName);
@@ -438,7 +439,7 @@ private:
     
     unordered_map<string, ID2D1Bitmap*> textureMap;
     unordered_map<string, IWICBitmapSource*> WICtextureMap;
-    unordered_map<string, ID2D1BitmapBrush1*> brushMap;
+    unordered_map<string, ID2D1Brush*> brushMap;
     unordered_map<string, shared_ptr<SE_INFO>> audioMap;
     unordered_map<string, IDWriteTextFormat*> fontMap;
     unordered_map<string, int> fontIndexMap;
@@ -829,10 +830,7 @@ extern ID2D1SolidColorBrush* g_pBrushPink;
 extern ID2D1SolidColorBrush* g_pBrushWhite;
 extern ID2D1SolidColorBrush* g_pBrushNetwork;
 extern ID2D1SolidColorBrush* g_pBrushGameTemp;
-//extern ID2D1LinearGradientBrush* g_pLinearGradientBrush;
-extern ID2D1RadialGradientBrush* g_pRadialGradientBrush;
-//extern ID2D1RadialGradientBrush* g_pRadialGradientBrush2;
-//extern ID2D1RadialGradientBrush* g_pRadialGradientBrush3;
+
 
 extern ID2D1BitmapBrush1* g_pBitmapBrushUI[20];
 

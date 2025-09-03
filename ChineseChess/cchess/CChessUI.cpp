@@ -699,8 +699,9 @@ void PIECE_UI::rend(bool board_side_red) const
 	//Rotation
 	g_pD2DDeviceContext->SetTransform(D2D1::Matrix3x2F::Rotation(-shandow_direction * 180 / PI, D2D1::Point2F(to_screen(shandow_pos.x), to_screen(shandow_pos.y))));
 
-	g_pRadialGradientBrush->SetTransform(D2D1::Matrix3x2F::Translation(to_screen(shandow_pos.x), to_screen(shandow_pos.y)));
-	FillEllipse_1(shandow_pos.x, shandow_pos.y, shandow_radiusx, shandow_radiusy, g_pRadialGradientBrush, shandow_opacity);
+	auto gradientBrush = g_rm.getBrush("shandow");
+	gradientBrush->SetTransform(D2D1::Matrix3x2F::Translation(to_screen(shandow_pos.x), to_screen(shandow_pos.y)));
+	FillEllipse_1(shandow_pos.x, shandow_pos.y, shandow_radiusx, shandow_radiusy, gradientBrush, shandow_opacity);
 
 	g_pD2DDeviceContext->SetTransform(D2D1::Matrix3x2F::Identity());
 
@@ -924,32 +925,17 @@ void PIECE_UI::UpdateShandow()
 {
 	posz = PIECE_DEFAULT_POSZ + zoom_multiple * POSZ_ZOOM_FACTOR;
 	shandow_opacity = 0.75f - zoom_multiple;	//0.5f-0.75f
-	D2D1_POINT_2F shandow_rect_top, shandow_rect_bottom, shandow_rect_left, shandow_rect_right;
-	D2D1_POINT_2F ori_rect_top{}, ori_rect_bottom{}, ori_rect_left{}, ori_rect_right{};
+
 	D2D1_RECT_F current_rect = D2D1::RectF(
 		posx - (piece_rect[0][0].right - piece_rect[0][0].left) * 0.5f, posy - (piece_rect[0][0].bottom - piece_rect[0][0].top) * 0.5f,
 		posx + (piece_rect[0][0].right - piece_rect[0][0].left) * 0.5f, posy + (piece_rect[0][0].bottom - piece_rect[0][0].top) * 0.5f);
-	string before = "before transform: rx=" + to_string(current_rect.right - current_rect.left) + " ry=" + to_string(current_rect.bottom - current_rect.top);
-	debugger_main.add_output_line(before);
+
 	shandow_direction = atan2f(light_posy - posy,posx - light_posx);
 
-	ori_rect_top.x = posx + cosf(shandow_direction) * (current_rect.right - current_rect.left) * 0.5f, ori_rect_top.y = posy + sinf(shandow_direction) * (current_rect.bottom - current_rect.top) * 0.5f;
-	ori_rect_bottom.x = posx - cosf(shandow_direction) * (current_rect.right - current_rect.left) * 0.5f, ori_rect_bottom.y = posy - sinf(shandow_direction) * (current_rect.bottom - current_rect.top) * 0.5f;
-	ori_rect_left.x = posx + cosf(shandow_direction + 0.5f * PI) * (current_rect.right - current_rect.left) * 0.5f, ori_rect_left.y = posy + sinf(shandow_direction + 0.5f * PI) * (current_rect.bottom - current_rect.top) * 0.5f;
-	ori_rect_right.x = posx - cosf(shandow_direction + 0.5f * PI) * (current_rect.right - current_rect.left) * 0.5f, ori_rect_right.y = posy - sinf(shandow_direction + 0.5f * PI) * (current_rect.bottom - current_rect.top) * 0.5f;
-
-	TransformPoint(ori_rect_top, shandow_rect_top);
-	TransformPoint(ori_rect_bottom, shandow_rect_bottom);
-	TransformPoint(ori_rect_left, shandow_rect_left);
-	TransformPoint(ori_rect_right, shandow_rect_right);
 	TransformPoint(ori_pos, shandow_pos);
-	string pos_dbg = "ori = " + to_string(ori_pos.x) + ", " + to_string(ori_pos.y) + " shandow_pos" + to_string(shandow_pos.x) + ", " + to_string(shandow_pos.y);
-	/*shandow_radiusx = DISTANCE(shandow_rect_left.x, shandow_rect_left.y, shandow_rect_right.x, shandow_rect_right.y) * 0.5f;
-	shandow_radiusy = DISTANCE(shandow_rect_top.x, shandow_rect_top.y, shandow_rect_bottom.x, shandow_rect_bottom.y) * 0.5f;*/
+
 	shandow_radiusx = (current_rect.right - current_rect.left) * 0.5f;
 	shandow_radiusy = (current_rect.bottom - current_rect.top) * 0.5f;
-	string after = "after transform: rx=" + to_string(shandow_radiusx) + " ry=" + to_string(shandow_radiusy) + " direction=" + to_string(shandow_direction);
-	debugger_main.add_output_line(after);
 	return;
 }
 

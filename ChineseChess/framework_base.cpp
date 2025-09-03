@@ -63,7 +63,6 @@ ID2D1SolidColorBrush* g_pBrushLightYellow = NULL;
 ID2D1SolidColorBrush* g_pBrushFloralWhite = NULL;
 ID2D1SolidColorBrush* g_pBrushGreen = NULL;
 ID2D1SolidColorBrush* g_pBrushLightGreen = NULL;
-//ID2D1SolidColorBrush* g_pBrushtext = NULL;
 ID2D1SolidColorBrush* g_pBrushRed = NULL;
 ID2D1SolidColorBrush* g_pBrushPurple = NULL;
 ID2D1SolidColorBrush* g_pBrushBrown = NULL;
@@ -75,11 +74,6 @@ ID2D1SolidColorBrush* g_pBrushPink = NULL;
 ID2D1SolidColorBrush* g_pBrushWhite = NULL;
 ID2D1SolidColorBrush* g_pBrushNetwork = NULL;
 ID2D1SolidColorBrush* g_pBrushGameTemp = NULL;
-
-//ID2D1LinearGradientBrush* g_pLinearGradientBrush = NULL;
-ID2D1RadialGradientBrush* g_pRadialGradientBrush = NULL;
-//ID2D1RadialGradientBrush* g_pRadialGradientBrush2 = NULL;
-//ID2D1RadialGradientBrush* g_pRadialGradientBrush3 = NULL;
 
 ID2D1BitmapBrush1* g_pBitmapBrushUI[20] = { NULL };
 
@@ -432,6 +426,16 @@ void ResourceManager::AddResource(string aliasName, string filePath, string md5,
     return;
 }
 
+void ResourceManager::AddBrush(string aliasName, ID2D1Brush* brush)
+{
+    if (brushMap.find(aliasName) != brushMap.end())
+    {
+        SAFE_RELEASE(brushMap[aliasName]);
+    }
+    brushMap[aliasName] = brush;
+    return;
+}
+
 void ResourceManager::LoadAll()
 {
     loadAllSignal.store(1);
@@ -468,7 +472,7 @@ ID2D1Bitmap* ResourceManager::getTexture(string aliasName)
     return textureMap[aliasName];
 }
 
-ID2D1BitmapBrush1* ResourceManager::getBrush(string aliasName)
+ID2D1Brush* ResourceManager::getBrush(string aliasName)
 {
     static int notFoundNum = 0;
     if (brushMap.find(aliasName) == brushMap.end() && notFoundNum < 3)
@@ -1145,16 +1149,8 @@ void LABEL::rend()
         if (TextFormat == 6)
         {
             g_pTextFormat_T = g_pTextFormat;
-            DrawTextA_1(text, g_pTextFormat_T,x1 * 0.9f + x2 * 0.1f,y1,x1 * 0.1f + x2 * 0.9f,y2,g_pRadialGradientBrush);
-            DrawTextA_1(text, g_pTextFormat_T,x1 * 0.9f + x2 * 0.1f,y1,x1 * 0.1f + x2 * 0.9f,y2,g_pBrushDark);
         }
-        else
-        {
-            DrawTextA_1(text,g_pTextFormat_T,x1 * 0.9f + x2 * 0.1f,y1,x1 * 0.1f + x2 * 0.9f,y2,Brush3);
-        }
-
-        //Brush3->SetOpacity(1.0F);
-
+        DrawTextA_1(text, g_pTextFormat_T, x1 * 0.9f + x2 * 0.1f, y1, x1 * 0.1f + x2 * 0.9f, y2, Brush3);
     }
     return;
 }
@@ -3341,290 +3337,243 @@ bool createGaussianBlurEffectBitmap(ID2D1Bitmap* src, ID2D1Image* dest,bool inte
 void CreateD2DResource()
 {
     debugger_main.writelog(DINFO, "in CreateD2DResource()",__LINE__);
-    if (!g_pD2DDeviceContext)
+    if (g_pD2DDeviceContext)
     {
-        HRESULT hr;
-        //创建工厂
-        hr = D2D1CreateFactory(D2D1_FACTORY_TYPE_MULTI_THREADED,
-            __uuidof(ID2D1Factory1),
-            reinterpret_cast<void**>(&g_pD2DFactory));
-        if (FAILED(hr))
-        {
-            debugger_main.writelog(-1,"Create D2D factory failed!");
-            quit_single = 1;
-            return;
-        }
-
-        // Initialize Image Factory
-        hr = CoCreateInstance(CLSID_WICImagingFactory, NULL, CLSCTX_INPROC_SERVER, __uuidof(pIWICFactory), (LPVOID*)&pIWICFactory);
-        if (FAILED(hr))
-        {
-            writelog("Create WICImagingFactory failed!");
-            quit_single = 1;
-            return;
-        }
-
-        hr = DWriteCreateFactory(
-            DWRITE_FACTORY_TYPE_SHARED,
-            __uuidof(IDWriteFactory),
-            reinterpret_cast<IUnknown**>(&g_pDWriteFactory)
-        );
-        if (FAILED(hr))
-        {
-            writelog("Create DWrite Factory failed!");
-            quit_single = 1;
-            return;
-        }
-        
-        hr = g_pD2DFactory->CreateDevice(pDxgiDevice, &g_pD2DDevice);
-        if (FAILED(hr))
-        {
-            debugger_main.writelog(-1,"Create D2D Device failed!");
-            quit_single = 1;
-            return;
-        }
-        hr = g_pD2DDevice->CreateDeviceContext(
-            D2D1_DEVICE_CONTEXT_OPTIONS_NONE,
-            &g_pD2DDeviceContext
-        );
-        if (FAILED(hr))
-        {
-            debugger_main.writelog(-1,"Create D2D DeviceContext failed!");
-            quit_single = 1;
-            return;
-        }
-
-        hr = g_pD2DDeviceContext->CreateBitmapFromDxgiSurface(
-            pDxgiBackBuffer,
-            &targetbitmapProperties,
-            &g_pD2DTargetBimtap
-        );
-        
-        if (FAILED(hr))
-        {
-            debugger_main.writelog(-1,"CreateBitmapFromDxgiSurface Failed.");
-            quit_single = 1;
-            return;
-        }
-        g_pD2DDeviceContext->SetTarget(g_pD2DTargetBimtap);
-
-        g_pD2DDeviceContext->SetUnitMode(D2D1_UNIT_MODE_PIXELS);
-
-        debugger_main.writelog(0,"d2d stage1 passed.");
-
-        // Create a brush
-        //通过渲染对象 创建一个固定颜色的画刷
-        hr = g_pD2DDeviceContext->CreateSolidColorBrush(
-            D2D1::ColorF(D2D1::ColorF::Black),
-            &g_pBrushBlack
-        );
-        if (FAILED(hr))
-        {
-            debugger_main.writelog(1,"Create brush failed!");
-            quit_single = 1;
-            return;
-        }
-        hr = g_pD2DDeviceContext->CreateSolidColorBrush(
-            D2D1::ColorF(D2D1::ColorF::Black),
-            &g_pBrushQuit
-        );
-
-        hr = g_pD2DDeviceContext->CreateSolidColorBrush(
-            D2D1::ColorF(D2D1::ColorF::White),
-            &g_pBrushWhite
-        );
-        hr = g_pD2DDeviceContext->CreateSolidColorBrush(
-            D2D1::ColorF(D2D1::ColorF::Gray),
-            &g_pBrushGray
-        );
-        hr = g_pD2DDeviceContext->CreateSolidColorBrush(
-            D2D1::ColorF(D2D1::ColorF::LightGray),
-            &g_pBrushLightGray
-        );
-
-        hr = g_pD2DDeviceContext->CreateSolidColorBrush(
-            D2D1::ColorF(D2D1::ColorF::SkyBlue),
-            &g_pBrushBlue
-        );
-        hr = g_pD2DDeviceContext->CreateSolidColorBrush(
-            D2D1::ColorF(D2D1::ColorF::DarkBlue),
-            &g_pBrushDarkBlue
-        );
-
-        hr = g_pD2DDeviceContext->CreateSolidColorBrush(
-            D2D1::ColorF(D2D1::ColorF::LightGoldenrodYellow),
-            &g_pBrushLightYellow
-        );
-        hr = g_pD2DDeviceContext->CreateSolidColorBrush(
-            D2D1::ColorF(D2D1::ColorF::LightSkyBlue),
-            &g_pBrushLightBlue
-        );
-        hr = g_pD2DDeviceContext->CreateSolidColorBrush(
-            D2D1::ColorF(D2D1::ColorF::MediumPurple),
-            &g_pBrushPurple
-        );
-        hr = g_pD2DDeviceContext->CreateSolidColorBrush(
-            D2D1::ColorF(D2D1::ColorF::Yellow),
-            &g_pBrushYellow
-        );
-        hr = g_pD2DDeviceContext->CreateSolidColorBrush(
-            D2D1::ColorF(D2D1::ColorF::White),
-            &g_pBrushLight
-        );
-        hr = g_pD2DDeviceContext->CreateSolidColorBrush(
-            D2D1::ColorF(D2D1::ColorF::Black),
-            &g_pBrushDark
-        );
-        hr = g_pD2DDeviceContext->CreateSolidColorBrush(
-            D2D1::ColorF(D2D1::ColorF::SaddleBrown),
-            &g_pBrushBrown
-        );
-        hr = g_pD2DDeviceContext->CreateSolidColorBrush(
-            D2D1::ColorF(D2D1::ColorF::LightPink),
-            &g_pBrushPink
-        );
-        g_pBrushLight->SetOpacity(0.5);
-        g_pBrushDark->SetOpacity(0.5);
-        hr = g_pD2DDeviceContext->CreateSolidColorBrush(
-            D2D1::ColorF(D2D1::ColorF::ForestGreen),
-            &g_pBrushGreen
-        );
-        hr = g_pD2DDeviceContext->CreateSolidColorBrush(
-            D2D1::ColorF(D2D1::ColorF::LightGreen),
-            &g_pBrushLightGreen
-        );
-        hr = g_pD2DDeviceContext->CreateSolidColorBrush(
-            D2D1::ColorF(D2D1::ColorF::FloralWhite),
-            &g_pBrushFloralWhite
-        ); 
-        hr = g_pD2DDeviceContext->CreateSolidColorBrush(
-            D2D1::ColorF(D2D1::ColorF::Red),
-            &g_pBrushRed
-        );
-        /*hr = g_pD2DDeviceContext->CreateSolidColorBrush(
-            D2D1::ColorF(D2D1::ColorF::Black),
-            &g_pBrushtext
-        );*/
-        hr = g_pD2DDeviceContext->CreateSolidColorBrush(
-            D2D1::ColorF(D2D1::ColorF::Black),
-            &g_pBrushNetwork
-        );
-        hr = g_pD2DDeviceContext->CreateSolidColorBrush(
-            D2D1::ColorF(1,0.5f,0),
-            &g_pBrushBGSelect
-        );
-        hr = g_pD2DDeviceContext->CreateSolidColorBrush(
-            D2D1::ColorF(D2D1::ColorF::OrangeRed),      
-            &g_pBrushGameTemp
-        );
-        
-        
-        
-        if (FAILED(hr))
-        {
-            writelog("Create brush failed!");
-            quit_single = 1;
-            return;
-        }
-        BrushRand[0] = g_pBrushGreen;
-        BrushRand[1] = g_pBrushRed;
-        BrushRand[2] = g_pBrushPurple;
-        BrushRand[3] = g_pBrushYellow;
-        BrushRand[4] = g_pBrushLightGreen;
-        BrushRand[5] = g_pBrushBlue;
-        BrushRand[6] = g_pBrushGreen;
-        BrushRand[7] = g_pBrushGray;
-
-        //float dashes[] = { 1 };
-        if (SUCCEEDED(hr))
-        {
-            hr = g_pD2DFactory->CreateStrokeStyle(
-                D2D1::StrokeStyleProperties(
-                    D2D1_CAP_STYLE_ROUND,
-                    D2D1_CAP_STYLE_ROUND,
-                    D2D1_CAP_STYLE_ROUND,
-                    D2D1_LINE_JOIN_ROUND,
-                    10.0f,
-                    D2D1_DASH_STYLE_SOLID,
-                    0.0f),
-                nullptr,
-                0,
-                &g_pStrokeStyle
-            );
-        }
-        
-        if (!SUCCEEDED(hr))
-        {
-            debugger_main.writelog(DERROR, "FAILED to CreateStrokeStyle", __LINE__);
-        }
-        
-        D2D1_GRADIENT_STOP gradientStops[3];
-        gradientStops[0].color = D2D1::ColorF(0, 0, 0, 1);
-        gradientStops[0].position = 0.0f;
-        gradientStops[1].color = D2D1::ColorF(0, 0, 0, 1);
-        gradientStops[1].position = 0.5f;
-        gradientStops[2].color = D2D1::ColorF(0, 0, 0, 0);
-        gradientStops[2].position = 1.0f;
-        ID2D1GradientStopCollection* pGradientStops = NULL;
-        // Create gradient stops collection
-        hr = g_pD2DDeviceContext->CreateGradientStopCollection(
-            gradientStops,
-            3,
-            D2D1_GAMMA_2_2,
-            D2D1_EXTEND_MODE_CLAMP,
-            &pGradientStops
-        );
-        if (FAILED(hr))
-        {
-            writelog("Create gradient stops collection failed!");
-            quit_single = 1;
-            return;
-        }
-        hr = g_pD2DDeviceContext->CreateRadialGradientBrush(
-            D2D1::RadialGradientBrushProperties(
-                D2D1::Point2F(to_screen(0), to_screen(0)),
-                D2D1::Point2F(to_screen(0), to_screen(0)),
-                to_screen(45), to_screen(45)),
-            pGradientStops,
-            &g_pRadialGradientBrush
-        );
-        if (FAILED(hr))
-        {
-            writelog("Create Radial gradient brush failed!");
-            quit_single = 1;
-            return;
-        }
-
-        SAFE_RELEASE(pGradientStops)
-        
-        debugger_main.writelog(0,"d2d stage2 passed.");
-
-        //todo: add LoadResolutionRalatedResources() and call when change resolution
-        
-        LoadFonts();
-        
-        
-        
-        if (set2[0].MSAA==2)
-        {
-            g_pD2DDeviceContext->SetAntialiasMode(D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
-            g_pD2DDeviceContext->SetTextAntialiasMode(D2D1_TEXT_ANTIALIAS_MODE_CLEARTYPE);
-        }
-        else if (set2[0].MSAA == 1)
-        {
-            g_pD2DDeviceContext->SetAntialiasMode(D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
-            g_pD2DDeviceContext->SetTextAntialiasMode(D2D1_TEXT_ANTIALIAS_MODE_GRAYSCALE);
-        }
-        else
-        {
-            g_pD2DDeviceContext->SetAntialiasMode(D2D1_ANTIALIAS_MODE_ALIASED);
-            g_pD2DDeviceContext->SetTextAntialiasMode(D2D1_TEXT_ANTIALIAS_MODE_ALIASED);
-        }
-
-        g_pD2DDeviceContext->SetTarget(g_pD2DTargetBimtap);
+        debugger_main.writelog(DINFO, "g_pD2DDeviceContext existed in CreateD2DResource()", __LINE__);
+        return;
     }
+    HRESULT hr;
+    //创建工厂
+    hr = D2D1CreateFactory(D2D1_FACTORY_TYPE_MULTI_THREADED,
+        __uuidof(ID2D1Factory1),
+        reinterpret_cast<void**>(&g_pD2DFactory));
+    if (FAILED(hr))
+    {
+        debugger_main.writelog(-1,"Create D2D factory failed!");
+        quit_single = 1;
+        return;
+    }
+
+    // Initialize Image Factory
+    hr = CoCreateInstance(CLSID_WICImagingFactory, NULL, CLSCTX_INPROC_SERVER, __uuidof(pIWICFactory), (LPVOID*)&pIWICFactory);
+    if (FAILED(hr))
+    {
+        writelog("Create WICImagingFactory failed!");
+        quit_single = 1;
+        return;
+    }
+
+    hr = DWriteCreateFactory(
+        DWRITE_FACTORY_TYPE_SHARED,
+        __uuidof(IDWriteFactory),
+        reinterpret_cast<IUnknown**>(&g_pDWriteFactory)
+    );
+    if (FAILED(hr))
+    {
+        writelog("Create DWrite Factory failed!");
+        quit_single = 1;
+        return;
+    }
+        
+    hr = g_pD2DFactory->CreateDevice(pDxgiDevice, &g_pD2DDevice);
+    if (FAILED(hr))
+    {
+        debugger_main.writelog(-1,"Create D2D Device failed!");
+        quit_single = 1;
+        return;
+    }
+    hr = g_pD2DDevice->CreateDeviceContext(
+        D2D1_DEVICE_CONTEXT_OPTIONS_NONE,
+        &g_pD2DDeviceContext
+    );
+    if (FAILED(hr))
+    {
+        debugger_main.writelog(-1,"Create D2D DeviceContext failed!");
+        quit_single = 1;
+        return;
+    }
+
+    hr = g_pD2DDeviceContext->CreateBitmapFromDxgiSurface(
+        pDxgiBackBuffer,
+        &targetbitmapProperties,
+        &g_pD2DTargetBimtap
+    );
+        
+    if (FAILED(hr))
+    {
+        debugger_main.writelog(-1,"CreateBitmapFromDxgiSurface Failed.");
+        quit_single = 1;
+        return;
+    }
+    g_pD2DDeviceContext->SetTarget(g_pD2DTargetBimtap);
+
+    g_pD2DDeviceContext->SetUnitMode(D2D1_UNIT_MODE_PIXELS);
+
+    debugger_main.writelog(0,"d2d stage1 passed.");
+
+    // Create a brush
+    //通过渲染对象 创建一个固定颜色的画刷
+    hr = g_pD2DDeviceContext->CreateSolidColorBrush(
+        D2D1::ColorF(D2D1::ColorF::Black),
+        &g_pBrushBlack
+    );
+    if (FAILED(hr))
+    {
+        debugger_main.writelog(1,"Create brush failed!");
+        quit_single = 1;
+        return;
+    }
+    hr = g_pD2DDeviceContext->CreateSolidColorBrush(
+        D2D1::ColorF(D2D1::ColorF::Black),
+        &g_pBrushQuit
+    );
+
+    hr = g_pD2DDeviceContext->CreateSolidColorBrush(
+        D2D1::ColorF(D2D1::ColorF::White),
+        &g_pBrushWhite
+    );
+    hr = g_pD2DDeviceContext->CreateSolidColorBrush(
+        D2D1::ColorF(D2D1::ColorF::Gray),
+        &g_pBrushGray
+    );
+    hr = g_pD2DDeviceContext->CreateSolidColorBrush(
+        D2D1::ColorF(D2D1::ColorF::LightGray),
+        &g_pBrushLightGray
+    );
+
+    hr = g_pD2DDeviceContext->CreateSolidColorBrush(
+        D2D1::ColorF(D2D1::ColorF::SkyBlue),
+        &g_pBrushBlue
+    );
+    hr = g_pD2DDeviceContext->CreateSolidColorBrush(
+        D2D1::ColorF(D2D1::ColorF::DarkBlue),
+        &g_pBrushDarkBlue
+    );
+
+    hr = g_pD2DDeviceContext->CreateSolidColorBrush(
+        D2D1::ColorF(D2D1::ColorF::LightGoldenrodYellow),
+        &g_pBrushLightYellow
+    );
+    hr = g_pD2DDeviceContext->CreateSolidColorBrush(
+        D2D1::ColorF(D2D1::ColorF::LightSkyBlue),
+        &g_pBrushLightBlue
+    );
+    hr = g_pD2DDeviceContext->CreateSolidColorBrush(
+        D2D1::ColorF(D2D1::ColorF::MediumPurple),
+        &g_pBrushPurple
+    );
+    hr = g_pD2DDeviceContext->CreateSolidColorBrush(
+        D2D1::ColorF(D2D1::ColorF::Yellow),
+        &g_pBrushYellow
+    );
+    hr = g_pD2DDeviceContext->CreateSolidColorBrush(
+        D2D1::ColorF(D2D1::ColorF::White),
+        &g_pBrushLight
+    );
+    hr = g_pD2DDeviceContext->CreateSolidColorBrush(
+        D2D1::ColorF(D2D1::ColorF::Black),
+        &g_pBrushDark
+    );
+    hr = g_pD2DDeviceContext->CreateSolidColorBrush(
+        D2D1::ColorF(D2D1::ColorF::SaddleBrown),
+        &g_pBrushBrown
+    );
+    hr = g_pD2DDeviceContext->CreateSolidColorBrush(
+        D2D1::ColorF(D2D1::ColorF::LightPink),
+        &g_pBrushPink
+    );
+    g_pBrushLight->SetOpacity(0.5);
+    g_pBrushDark->SetOpacity(0.5);
+    hr = g_pD2DDeviceContext->CreateSolidColorBrush(
+        D2D1::ColorF(D2D1::ColorF::ForestGreen),
+        &g_pBrushGreen
+    );
+    hr = g_pD2DDeviceContext->CreateSolidColorBrush(
+        D2D1::ColorF(D2D1::ColorF::LightGreen),
+        &g_pBrushLightGreen
+    );
+    hr = g_pD2DDeviceContext->CreateSolidColorBrush(
+        D2D1::ColorF(D2D1::ColorF::FloralWhite),
+        &g_pBrushFloralWhite
+    ); 
+    hr = g_pD2DDeviceContext->CreateSolidColorBrush(
+        D2D1::ColorF(D2D1::ColorF::Red),
+        &g_pBrushRed
+    );
+    hr = g_pD2DDeviceContext->CreateSolidColorBrush(
+        D2D1::ColorF(D2D1::ColorF::Black),
+        &g_pBrushNetwork
+    );
+    hr = g_pD2DDeviceContext->CreateSolidColorBrush(
+        D2D1::ColorF(1,0.5f,0),
+        &g_pBrushBGSelect
+    );
+    hr = g_pD2DDeviceContext->CreateSolidColorBrush(
+        D2D1::ColorF(D2D1::ColorF::OrangeRed),      
+        &g_pBrushGameTemp
+    );  
+        
+    if (FAILED(hr))
+    {
+        writelog("Create brush failed!");
+        quit_single = 1;
+        return;
+    }
+    BrushRand[0] = g_pBrushGreen;
+    BrushRand[1] = g_pBrushRed;
+    BrushRand[2] = g_pBrushPurple;
+    BrushRand[3] = g_pBrushYellow;
+    BrushRand[4] = g_pBrushLightGreen;
+    BrushRand[5] = g_pBrushBlue;
+    BrushRand[6] = g_pBrushGreen;
+    BrushRand[7] = g_pBrushGray;
+
+    //float dashes[] = { 1 };
+    if (SUCCEEDED(hr))
+    {
+        hr = g_pD2DFactory->CreateStrokeStyle(
+            D2D1::StrokeStyleProperties(
+                D2D1_CAP_STYLE_ROUND,
+                D2D1_CAP_STYLE_ROUND,
+                D2D1_CAP_STYLE_ROUND,
+                D2D1_LINE_JOIN_ROUND,
+                10.0f,
+                D2D1_DASH_STYLE_SOLID,
+                0.0f),
+            nullptr,
+            0,
+            &g_pStrokeStyle
+        );
+    }
+        
+    if (!SUCCEEDED(hr))
+    {
+        debugger_main.writelog(DERROR, "FAILED to CreateStrokeStyle", __LINE__);
+    }
+        
+    debugger_main.writelog(DINFO, "d2d stage2 passed.");
+        
+    LoadFonts();
+        
+    if (set2[0].MSAA==2)
+    {
+        g_pD2DDeviceContext->SetAntialiasMode(D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
+        g_pD2DDeviceContext->SetTextAntialiasMode(D2D1_TEXT_ANTIALIAS_MODE_CLEARTYPE);
+    }
+    else if (set2[0].MSAA == 1)
+    {
+        g_pD2DDeviceContext->SetAntialiasMode(D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
+        g_pD2DDeviceContext->SetTextAntialiasMode(D2D1_TEXT_ANTIALIAS_MODE_GRAYSCALE);
+    }
+    else
+    {
+        g_pD2DDeviceContext->SetAntialiasMode(D2D1_ANTIALIAS_MODE_ALIASED);
+        g_pD2DDeviceContext->SetTextAntialiasMode(D2D1_TEXT_ANTIALIAS_MODE_ALIASED);
+    }
+
+    g_pD2DDeviceContext->SetTarget(g_pD2DTargetBimtap);
     
-    debugger_main.writelog(0,"DirectX was built.");
+    debugger_main.writelog(DINFO, "DirectX was built.");
     thread_IO_request_verify_res = -1;
     return;
 }
@@ -4635,7 +4584,7 @@ void init_once()
 
     res[89].filename = ".\\wrap_oal.dll"; res[89].md5 = "549347BCD4AACD63243D78E8F869DBB1";
 
-    debugger_main.writelog(DINFO, "before AddFontResourceA", __LINE__);
+    debugger_main.writelog(DDEBUG, "before AddFontResourceA", __LINE__);
     int tt;
     for (int i = 86; i >= 82; i--)
     {

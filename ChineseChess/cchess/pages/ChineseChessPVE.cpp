@@ -84,6 +84,10 @@ bool LocalGamePVE_Page::EnterPage()
 			{
 				Sleep(1);
 			}
+
+			//add brush
+			CreateAndAddBrush();
+
 			//resolve atlas data
 			if (!CUI->LoadPiecesAtlasInfo())
 			{
@@ -93,7 +97,8 @@ bool LocalGamePVE_Page::EnterPage()
 			CUI->Reset();
 			return;
 		});
-	
+
+	g_rm.AddResource("effect font", ".\\game\\font\\QianTuBiFengShouXieTi.ttf", "pass", FONT_DESC{ "Ç§Í¼±Ê·æÊÖÐ´Ìå",192 });
 
 	g_rm.AddResource("bg board", ".\\game\\pic\\board.jpg", "DE601E07F5C7D8B8DDD81F521A458510", RESOURCE_INFO::BRUSH_ONLY);
 
@@ -101,6 +106,11 @@ bool LocalGamePVE_Page::EnterPage()
 
 	g_rm.AddResource("pieces", ".\\game\\pic\\pieces.png", "pass", RESOURCE_INFO::DEFAULT_Bitmap);
 	g_rm.AddResource("pieces atlas info", ".\\game\\pic\\pieces.dat", "pass", RESOURCE_INFO::DEFAULT_TEXT);
+
+	g_rm.AddResource("eat", ".\\game\\sounds\\eat.wav", "pass", RESOURCE_INFO::DEFAULT_WAVE);
+	g_rm.AddResource("juesha", ".\\game\\sounds\\juesha.wav", "pass", RESOURCE_INFO::DEFAULT_WAVE);
+	g_rm.AddResource("checkmate", ".\\game\\sounds\\checkmate.wav", "pass", RESOURCE_INFO::DEFAULT_WAVE);
+	g_rm.AddResource("move", ".\\game\\sounds\\move.wav", "pass", RESOURCE_INFO::DEFAULT_WAVE);
 	g_rm.LoadAll();
 
 	g_cm.AddButton(returnButton);
@@ -119,3 +129,51 @@ bool LocalGamePVE_Page::ExitPage()
 	return 1;
 }
 
+void LocalGamePVE_Page::CreateAndAddBrush()
+{
+	HRESULT hr;
+	D2D1_GRADIENT_STOP gradientStops[3]{};
+	gradientStops[0].color = D2D1::ColorF(0, 0, 0, 1);
+	gradientStops[0].position = 0.0f;
+	gradientStops[1].color = D2D1::ColorF(0, 0, 0, 1);
+	gradientStops[1].position = 0.5f;
+	gradientStops[2].color = D2D1::ColorF(0, 0, 0, 0);
+	gradientStops[2].position = 1.0f;
+	ID2D1GradientStopCollection* pGradientStops = nullptr;
+	ID2D1RadialGradientBrush* pRadialGradientBrush = nullptr;
+	// Create gradient stops collection
+	hr = g_pD2DDeviceContext->CreateGradientStopCollection(
+		gradientStops,
+		3,
+		D2D1_GAMMA_2_2,
+		D2D1_EXTEND_MODE_CLAMP,
+		&pGradientStops
+	);
+	if (FAILED(hr))
+	{
+		debugger_main.writelog(DWARNNING, "Create gradient stops collection failed!", __LINE__);
+		g_PageManager.SwitchPageTo(HOME_PAGE_INDEX);
+		g_am.PlayEffectSound("ioerror");
+		return;
+	}
+	hr = g_pD2DDeviceContext->CreateRadialGradientBrush(
+		D2D1::RadialGradientBrushProperties(
+			D2D1::Point2F(to_screen(0), to_screen(0)),
+			D2D1::Point2F(to_screen(0), to_screen(0)),
+			to_screen(45), to_screen(45)),
+		pGradientStops,
+		&pRadialGradientBrush
+	);
+	if (FAILED(hr))
+	{
+		debugger_main.writelog(DWARNNING, "Create Radial gradient brush failed!", __LINE__);
+		SAFE_RELEASE(pGradientStops);
+		g_PageManager.SwitchPageTo(HOME_PAGE_INDEX);
+		g_am.PlayEffectSound("ioerror");
+		return;
+	}
+
+	SAFE_RELEASE(pGradientStops);
+	g_rm.AddBrush("shandow", pRadialGradientBrush);
+	return;
+}
