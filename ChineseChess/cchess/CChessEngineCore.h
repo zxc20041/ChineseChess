@@ -21,7 +21,7 @@ public:
 	virtual bool CheckBestMove() = 0;
 	virtual CChessBase::PieceMoveDesc GetBestMove() = 0;
 	virtual void SearchBestMove() = 0;
-	bool GetCurrentSide();
+	bool GetCurrentSide() const;
 
 	//online
 	virtual CChessBase::CChessMap GetMap() = 0;
@@ -29,14 +29,15 @@ public:
 	
 protected:
 	virtual std::vector<CChessBase::PiecePosDesc> GetAvailableSteps(CChessBase::PiecePosDesc pos);
+	
 	CChessBase::CChessMap map;
-
-	bool side_red, current_side_red;
+	std::vector<CChessBase::PiecePosDesc> availablePositions[9][10];
+	bool side_red, current_side_red, available_steps_ready;
 	
 	CChessEngineAdapter engineAdapter;
 private:
 	bool NotMySide(int x, int y, bool my_side);
-	CChessBase::ChessPieceType GetPieceType(CChessBase::PiecePosDesc& pos);
+	CChessBase::ChessPieceType GetPieceType(CChessBase::PiecePosDesc& pos) const;
 	bool PositionInBoard(int x, int y);
 	bool PositionPieceNull(int x, int y);
 	bool PositionInMandarinArea(int x, int y, bool my_side);

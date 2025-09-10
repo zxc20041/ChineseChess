@@ -17,7 +17,7 @@ public:
 	virtual void SyncMap(CChessBase::CChessMap newMap) override;
 
 protected:
-	std::vector<CChessBase::PiecePosDesc> availablePositions[9][10];
+	
 
 	bool update_check_win, match_over, win_side;
 	CChessBase::EngineResult result;
@@ -25,4 +25,5 @@ protected:
 	virtual bool CheckBestMove() override;
 	virtual CChessBase::PieceMoveDesc GetBestMove() override;
 	virtual void SearchBestMove() override;
+	void SearchAvailableSteps();
 };

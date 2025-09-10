@@ -27,8 +27,11 @@ public:
 
 	bool CheckBestMove();
 	CChessBase::PieceMoveDesc GetBestMove();
-
 	void SearchBestMove();
+
+	void SearchAvailableSteps();
+	bool CheckAvailableSteps();
+	std::vector<CChessBase::PieceMoveDesc> GetAvailablePositions();
 
 	enum class ENGINE_STATUS
 	{
@@ -49,11 +52,12 @@ private:
 	std::string currentPosInMove;
 
 	CChessBase::PieceMoveDesc bestMove;
+	std::vector<CChessBase::PieceMoveDesc> availableStepsBuffer;
 
 	ENGINE_STATUS status;
 
 	bool enable_LimitStrength;
-	std::atomic<bool> bestMoveRecv, noBestMove, mate, uciOK, mateRecv;
+	std::atomic<bool> bestMoveRecv, noBestMove, mate, uciOK, mateRecv, availableStepRecv;
 	std::atomic<int> drop_bestMove_required;
 	int elo, targetStepDepth;
 

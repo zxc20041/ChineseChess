@@ -16,7 +16,7 @@ CChessEngineAdapter::CChessEngineAdapter()
     elo = 0, enable_LimitStrength = 1, hash_size = 64;
     status = ENGINE_STATUS::E_INIT;
     stepTime = 0, targetStepTime = 5;
-    bestMoveRecv = 0, noBestMove = 0, mate = 0, uciOK = 0, mateRecv = 0;
+    bestMoveRecv = 0, noBestMove = 0, mate = 0, uciOK = 0, mateRecv = 0, availableStepRecv = 0;
     thread_num = 8, targetStepDepth = 24;
     drop_bestMove_required = 0;
     currentPosInMove = "position startpos moves";
@@ -210,7 +210,7 @@ void CChessEngineAdapter::read_output(string line)
     {
         return;
     }
-    debugger_main.writelog(DDEBUG, "read_output from proc: " + line, __LINE__);
+    //debugger_main.writelog(DDEBUG, "read_output from proc: " + line, __LINE__);
     if (line.find("uciok") != string::npos)
     {
         uciOK = 1;
@@ -254,6 +254,14 @@ void CChessEngineAdapter::read_output(string line)
     {
         mate = 1;
     }
+    else if (line.find(": 1") != string::npos)
+    {
+        availableStepsBuffer.push_back(PieceMoveDesc{ line[0] - 'a',line[1] - '0',line[2] - 'a',line[3] - '0' });
+    }
+    else if (line.find("Nodes searched:") != string::npos)
+    {
+        availableStepRecv.store(1);
+    }
     return;
 }
 
@@ -279,4 +287,22 @@ void CChessEngineAdapter::write_input(string cmd)
         }
     }
     return;
+}
+
+void CChessEngineAdapter::SearchAvailableSteps()
+{
+    availableStepRecv.store(0);
+    availableStepsBuffer.clear();
+    write_input("go perft 1");
+    return;
+}
+
+bool CChessEngineAdapter::CheckAvailableSteps()
+{
+    return availableStepRecv;
+}
+
+std::vector<CChessBase::PieceMoveDesc> CChessEngineAdapter::GetAvailablePositions()
+{
+    return availableStepsBuffer;
 }

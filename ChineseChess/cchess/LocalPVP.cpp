@@ -15,6 +15,8 @@ CChessLocalPVP::~CChessLocalPVP()
 
 void CChessLocalPVP::Reset()
 {
+	engineAdapter.Reset();
+
 	memset(&map, PIECE_NULL, sizeof(map));
 	
 	map.board[0][0] = PIECE_ROOK;
@@ -62,6 +64,8 @@ void CChessLocalPVP::Reset()
 		}
 	}
 
+	SearchAvailableSteps();
+
 	for (int i = 0; i < 9; i++)
 	{
 		for (int j = 0; j < 10; j++)
@@ -70,7 +74,6 @@ void CChessLocalPVP::Reset()
 		}
 	}
 
-	engineAdapter.Reset();
 	return;
 }
 
@@ -89,6 +92,18 @@ void CChessLocalPVP::Update()
 			}
 			result = r;
 			update_check_win = 0;
+		}
+	}
+	if (!available_steps_ready)
+	{
+		if (engineAdapter.CheckAvailableSteps())
+		{
+			auto available_moves = engineAdapter.GetAvailablePositions();
+			for (auto& i: available_moves)
+			{
+				availablePositions[i.fromx][i.fromy].emplace_back(i.tox, i.toy);
+			}
+			available_steps_ready = 1;
 		}
 	}
 	return;
@@ -133,6 +148,8 @@ void CChessLocalPVP::MovePiece(CChessBase::PieceMoveDesc move)
 
 	engineAdapter.MovePiece(move);
 	update_check_win = 1;
+
+	SearchAvailableSteps();
 	//print map
 	debugger_main.writelog(DDEBUG, "map info", __LINE__);
 	for (int i = BOARD_Y_MAX; i >= 0; i--)
@@ -191,5 +208,19 @@ CChessBase::PieceMoveDesc CChessLocalPVP::GetBestMove()
 
 void CChessLocalPVP::SearchBestMove()
 {
+	return;
+}
+
+void CChessLocalPVP::SearchAvailableSteps()
+{
+	available_steps_ready = 0;
+	for (int i = 0; i < 9; i++)
+	{
+		for (int j = 0; j < 10; j++)
+		{
+			availablePositions[i][j].clear();
+		}
+	}
+	engineAdapter.SearchAvailableSteps();
 	return;
 }
