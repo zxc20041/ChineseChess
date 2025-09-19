@@ -15,6 +15,9 @@ CChessLocalPVP::~CChessLocalPVP()
 
 void CChessLocalPVP::Reset()
 {
+	side_red = 1, current_side_red = 1, available_steps_ready = 0, checkMate = 0;
+	update_check_win = 0, match_over = 0, win_side = 0;
+
 	engineAdapter.Reset();
 
 	memset(&map, PIECE_NULL, sizeof(map));
@@ -66,20 +69,12 @@ void CChessLocalPVP::Reset()
 
 	SearchAvailableSteps();
 
-	for (int i = 0; i < 9; i++)
-	{
-		for (int j = 0; j < 10; j++)
-		{
-			availablePositions[i][j] = GetAvailableSteps(PiecePosDesc(i, j));
-		}
-	}
-
 	return;
 }
 
 void CChessLocalPVP::Update()
 {
-	if (update_check_win)
+	if (update_check_win&& !result.valid)
 	{
 		EngineResult r = engineAdapter.GetResult();
 		if (r.valid)
@@ -144,31 +139,20 @@ void CChessLocalPVP::MovePiece(CChessBase::PieceMoveDesc move)
 	map.piece_side[move.tox][move.toy] = map.piece_side[move.fromx][move.fromy];
 	map.board[move.fromx][move.fromy] = PIECE_NULL;
 
+	if (GetCheckMate())
+	{
+		result.result = RESULT_CHECK;
+		result.valid = 1;
+		//debugger_main.writelog(DDEBUG, "found CheckMate");
+	}
+
 	current_side_red = !current_side_red;
 
 	engineAdapter.MovePiece(move);
 	update_check_win = 1;
 
 	SearchAvailableSteps();
-	//print map
-	debugger_main.writelog(DDEBUG, "map info", __LINE__);
-	for (int i = BOARD_Y_MAX; i >= 0; i--)
-	{
-		string line;
-		for (int j = 0; j <= BOARD_X_MAX; j++)
-		{
-			line += " " + to_string(map.board[j][i]);
-		}
-		debugger_main.writelog(DDEBUG, line);
-	}
-
-	for (int i = 0; i < 9; i++)
-	{
-		for (int j = 0; j < 10; j++)
-		{
-			availablePositions[i][j] = GetAvailableSteps(PiecePosDesc(i, j));
-		}
-	}
+	
 	return;
 }
 
@@ -176,9 +160,9 @@ std::vector<CChessBase::PiecePosDesc> CChessLocalPVP::SelectPiece(CChessBase::Pi
 {
 	if (map.board[pos.x][pos.y] == PIECE_NULL)
 	{
-		debugger_main.add_tagline("WARNNING: Select NULL PIECE");
+		debugger_main.writelog(DWARNNING, "WARNNING: Select NULL PIECE", __LINE__);
 	}
-	return availablePositions[pos.x][pos.y];
+	return GetAvailableSteps(PiecePosDesc(pos.x, pos.y));
 }
 
 void CChessLocalPVP::SetSide(bool side_red)

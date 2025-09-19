@@ -517,6 +517,7 @@ void CChessUI::UIRender::MovePiece(PieceMoveDesc move, bool eat)
 			if (i->MatchPosition(move.tox, move.toy))
 			{
 				i->Die();
+				break;
 			}
 		}
 		//todo: play se & anime
@@ -570,7 +571,7 @@ void CChessUI::UIRender::PostDraw(bool post_side)
 
 unique_ptr<Box> CChessUI::UIRender::GetBox(int x, int y)
 {
-	//map_line_y increased from top to bottom, however y increased from bottom to top
+	//map_line_y increasing from top to bottom, however y increasing from bottom to top
 	return make_unique<Box>(map_line_x[x] - block_length_x * 0.45f, map_line_y[BOARD_Y_MAX - y] - block_length_y * 0.45f, map_line_x[x] + block_length_x * 0.45f, map_line_y[BOARD_Y_MAX - y] + block_length_y * 0.45f);
 }
 
@@ -696,14 +697,10 @@ void PIECE_UI::rend(bool board_side_red) const
 	}
 
 	//rend shandow
-	//Rotation
-	g_pD2DDeviceContext->SetTransform(D2D1::Matrix3x2F::Rotation(-shandow_direction * 180 / PI, D2D1::Point2F(to_screen(shandow_pos.x), to_screen(shandow_pos.y))));
-
-	auto gradientBrush = g_rm.getBrush("shandow");
-	gradientBrush->SetTransform(D2D1::Matrix3x2F::Translation(to_screen(shandow_pos.x), to_screen(shandow_pos.y)));
-	FillEllipse_1(shandow_pos.x, shandow_pos.y, shandow_radiusx, shandow_radiusy, gradientBrush, shandow_opacity);
-
-	g_pD2DDeviceContext->SetTransform(D2D1::Matrix3x2F::Identity());
+	if (status != CChessBase::PIECE_STATIC && status != CChessBase::PIECE_DIED)
+	{
+		RendShandow();
+	}
 
 	//rend piece
 	ID2D1Bitmap* texture = g_rm.getTexture("pieces");
@@ -936,6 +933,19 @@ void PIECE_UI::UpdateShandow()
 
 	shandow_radiusx = (current_rect.right - current_rect.left) * 0.5f;
 	shandow_radiusy = (current_rect.bottom - current_rect.top) * 0.5f;
+	return;
+}
+
+void PIECE_UI::RendShandow() const
+{
+	//Rotation
+	g_pD2DDeviceContext->SetTransform(D2D1::Matrix3x2F::Rotation(-shandow_direction * 180 / PI, D2D1::Point2F(to_screen(shandow_pos.x), to_screen(shandow_pos.y))));
+
+	auto gradientBrush = g_rm.getBrush("shandow");
+	gradientBrush->SetTransform(D2D1::Matrix3x2F::Translation(to_screen(shandow_pos.x), to_screen(shandow_pos.y)));
+	FillEllipse_1(shandow_pos.x, shandow_pos.y, shandow_radiusx, shandow_radiusy, gradientBrush, shandow_opacity);
+
+	g_pD2DDeviceContext->SetTransform(D2D1::Matrix3x2F::Identity());
 	return;
 }
 

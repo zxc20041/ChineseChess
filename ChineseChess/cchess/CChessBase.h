@@ -28,6 +28,7 @@ namespace CChessBase
 	enum EningeResultType
 	{
 		RESULT_MATE,
+		RESULT_NOMOVE,
 		RESULT_DRAW,
 		RESULT_RESIGN,
 		RESULT_CHECK

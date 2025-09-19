@@ -254,6 +254,10 @@ void debug_ex::writelog(int type, string content,int line)
                 break;
             case DWARNNING:
                 logbuf[i] += "[Warning] ";
+            #if defined(_DEBUG)
+                set_osd_enable(1);
+                add_tagline("[Warning] " + content);
+            #endif
                 break;
             case -1:
             case DERROR:

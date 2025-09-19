@@ -93,6 +93,10 @@ void CChessUIPVE::Update()
 		{
 			render.GameOver(r.win_side);
 		}
+		else if (r.result == RESULT_CHECK)
+		{
+			render.CheckMate();
+		}
 	}
 
 	render.Update();

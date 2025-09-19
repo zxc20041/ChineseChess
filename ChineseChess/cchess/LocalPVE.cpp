@@ -15,21 +15,6 @@ CChessLocalPVE::~CChessLocalPVE()
 
 void CChessLocalPVE::Update()
 {
-	/*if (update_check_win)
-	{
-		EngineResult r = engineAdapter.GetResult();
-		if (r.valid)
-		{
-			if (result.result == RESULT_MATE)
-			{
-				win_side = !current_side_red;
-				match_over = 1;
-				r.win_side = !current_side_red;
-			}
-			result = r;
-			update_check_win = 0;
-		}
-	}*/
 	CChessLocalPVP::Update();
 	return;
 }

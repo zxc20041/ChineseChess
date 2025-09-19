@@ -7,7 +7,7 @@ using namespace debugger;
 CChessEngine::CChessEngine()
 {
 	memset(&map, 0, sizeof(map));
-	side_red = 1, current_side_red = 1, available_steps_ready = 0;
+	side_red = 1, current_side_red = 1, available_steps_ready = 0, checkMate = 0;
 }
 
 CChessEngine::~CChessEngine()
@@ -135,7 +135,7 @@ bool CChessEngine::ObeyRule_KingMeetKing_for_king(int target_x, int target_y)
 
 vector<PiecePosDesc> CChessEngine::GetAvailableSteps(PiecePosDesc pos)
 {
-	while (!available_steps_ready)
+	while (!available_steps_ready && !quit_single && !normal_quit)
 	{
 		Update();
 	}
@@ -150,4 +150,393 @@ bool CChessEngine::GetSide()
 bool CChessEngine::GetCurrentSide() const
 {
 	return current_side_red;
+}
+
+
+bool CChessEngine::GetCheckMate()
+{
+	for (int i = 0; i < 9; i++)
+	{
+		for (int j = 0; j < 10; j++)
+		{
+			if (map.board[i][j] != PIECE_NULL && map.piece_side[i][j] == current_side_red)
+			{
+				if (GetCheckMate(PiecePosDesc(i, j)))
+				{
+					return 1;
+				}
+			}
+		}
+	}
+	return 0;
+}
+
+
+//棋子行棋规则
+//帅/将 移动范围：只能在九宫内移动移动 规则：每一步只可以水平或垂直移动一点 特殊规则：帅和将不准在同一直线上直接对面（中间无棋子），如一方已先占据位置，则另一方必须回避，否则就算输
+//仕/士 移动范围：只能在九宫内移动移动 规则：每一步只可以沿对角线方向移动一点
+//相/象 移动范围：河界的一侧移动 规则：每一步只可以沿对角线方向移动两点，可使用汉字中的田字形象地表述：田字格的对角线，俗称相（象）走田字。当相（象）行走路线中，即田字中心有棋子时（无论己方或是对方棋子），则不允许走过去，俗称：塞相（象）眼。
+//馬 移动范围：任何位置移动 规则：每一步只可以水平或垂直移动一点，再按对角线方面向左或者右移动。可使用汉字中的日字来形容马的行走方式，俗称：马走日字（斜对角线）。当馬行走时，第一步直行或横行处有别的棋子（无论己方或是对方棋子）挡住，则不许走过去，俗称：蹩马腿。
+//車 移动范围：任何位置移动 规则：可以水平或垂直方向移动任意个无阻碍的点
+//炮/砲 移动范围：任何位置移动 规则：移动起来和车很相似，但它必须跳过一个棋子来吃掉对方棋子。
+//兵/卒 移动范围：任何位置移动 规则：过河界前，每步只能向前移动一点。过河界后，增加了向左右移动的能力，兵（卒）不允许向后移动。
+bool CChessEngine::GetCheckMate(PiecePosDesc pos)
+{
+	bool this_side = map.piece_side[pos.x][pos.y];
+	bool cannon_jump_piece = 0;
+
+	
+	vector<PiecePosDesc> result;	//pos位置棋子可达的所有位置，若包含对方的王，则为将军
+
+	if (this_side != current_side_red)	//检查要求为当前走棋方(模拟连走2步)
+	{
+		return 0;
+	}
+
+	bool restrict_Y_move = !ObeyRule_KingMeetKing(pos.x, pos.y);
+
+	switch (GetPieceType(pos))
+	{
+	case CChessBase::PIECE_NULL:
+		return 0;
+		break;
+	case CChessBase::PIECE_PAWN:
+		if (this_side && pos.y <= 4)	//未过河
+		{
+			if (NotMySide(pos.x, pos.y + 1, this_side))	//不能加入我方棋子位置
+			{
+				result.emplace_back(pos.x, pos.y + 1);
+			}
+		}
+		else if (!this_side && pos.y > 4)
+		{
+			if (NotMySide(pos.x, pos.y - 1, this_side))
+			{
+				result.emplace_back(pos.x, pos.y - 1);
+			}
+		}
+		else if (this_side)   //过河
+		{
+			if (pos.y <= 8)
+			{
+				if (NotMySide(pos.x, pos.y + 1, this_side))
+				{
+					result.emplace_back(pos.x, pos.y + 1);
+				}
+			}
+			if (pos.x > 0 && !restrict_Y_move)
+			{
+				if (NotMySide(pos.x - 1, pos.y, this_side))
+				{
+					result.emplace_back(pos.x - 1, pos.y);
+				}
+			}
+			if (pos.x < 8 && !restrict_Y_move)
+			{
+				if (NotMySide(pos.x + 1, pos.y, this_side))
+				{
+					result.emplace_back(pos.x + 1, pos.y);
+				}
+			}
+		}
+		else
+		{
+			if (pos.y > 0)
+			{
+				if (NotMySide(pos.x, pos.y - 1, this_side))
+				{
+					result.emplace_back(pos.x, pos.y - 1);
+				}
+			}
+			if (pos.x > 0 && !restrict_Y_move)
+			{
+				if (NotMySide(pos.x - 1, pos.y, this_side))
+				{
+					result.emplace_back(pos.x - 1, pos.y);
+				}
+			}
+			if (pos.x < 8 && !restrict_Y_move)
+			{
+				if (NotMySide(pos.x + 1, pos.y, this_side))
+				{
+					result.emplace_back(pos.x + 1, pos.y);
+				}
+			}
+		}
+		break;
+	case CChessBase::PIECE_ROOK:
+		for (int i = pos.y + 1; i < 10; i++)
+		{
+			if (map.board[pos.x][i] != PIECE_NULL)
+			{
+				if (NotMySide(pos.x, i, this_side))
+				{
+					result.emplace_back(pos.x, i);
+				}
+				break;
+			}
+			result.emplace_back(pos.x, i);
+		}
+		for (int i = pos.y - 1; i >= 0; i--)
+		{
+			if (map.board[pos.x][i] != PIECE_NULL)
+			{
+				if (NotMySide(pos.x, i, this_side))
+				{
+					result.emplace_back(pos.x, i);
+				}
+				break;
+			}
+			result.emplace_back(pos.x, i);
+		}
+		if (restrict_Y_move)
+		{
+			break;
+		}
+		for (int i = pos.x - 1; i >= 0; i--)
+		{
+			if (map.board[i][pos.y] != PIECE_NULL)
+			{
+				if (NotMySide(i, pos.y, this_side))
+				{
+					result.emplace_back(i, pos.y);
+				}
+				break;
+			}
+			result.emplace_back(i, pos.y);
+		}
+		for (int i = pos.x + 1; i < 9; i++)
+		{
+			if (map.board[i][pos.y] != PIECE_NULL)
+			{
+				if (NotMySide(i, pos.y, this_side))
+				{
+					result.emplace_back(i, pos.y);
+				}
+				break;
+			}
+			result.emplace_back(i, pos.y);
+		}
+
+		break;
+	case CChessBase::PIECE_HORSE:
+		if (restrict_Y_move)
+		{
+			break;
+		}
+		if (PositionPieceNull(pos.x - 1, pos.y))
+		{
+			if (NotMySide(pos.x - 2, pos.y + 1, this_side))
+			{
+				result.emplace_back(pos.x - 2, pos.y + 1);
+			}
+			if (NotMySide(pos.x - 2, pos.y - 1, this_side))
+			{
+				result.emplace_back(pos.x - 2, pos.y - 1);
+			}
+		}
+		if (PositionPieceNull(pos.x + 1, pos.y))
+		{
+			if (NotMySide(pos.x + 2, pos.y + 1, this_side))
+			{
+				result.emplace_back(pos.x + 2, pos.y + 1);
+			}
+			if (NotMySide(pos.x + 2, pos.y - 1, this_side))
+			{
+				result.emplace_back(pos.x + 2, pos.y - 1);
+			}
+		}
+		if (PositionPieceNull(pos.x, pos.y + 1))
+		{
+			if (NotMySide(pos.x + 1, pos.y + 2, this_side))
+			{
+				result.emplace_back(pos.x + 1, pos.y + 2);
+			}
+			if (NotMySide(pos.x - 1, pos.y + 2, this_side))
+			{
+				result.emplace_back(pos.x - 1, pos.y + 2);
+			}
+		}
+		if (PositionPieceNull(pos.x, pos.y - 1))
+		{
+			if (NotMySide(pos.x + 1, pos.y - 2, this_side))
+			{
+				result.emplace_back(pos.x + 1, pos.y - 2);
+			}
+			if (NotMySide(pos.x - 1, pos.y - 2, this_side))
+			{
+				result.emplace_back(pos.x - 1, pos.y - 2);
+			}
+		}
+		break;
+	case CChessBase::PIECE_ELEPHANT:
+		if (restrict_Y_move)
+		{
+			break;
+		}
+		if (PositionPieceNull(pos.x - 1, pos.y - 1) && NotMySide(pos.x - 2, pos.y - 2, this_side))
+		{
+			result.emplace_back(pos.x - 2, pos.y - 2);
+		}
+		if (PositionPieceNull(pos.x - 1, pos.y + 1) && NotMySide(pos.x - 2, pos.y + 2, this_side))
+		{
+			result.emplace_back(pos.x - 2, pos.y + 2);
+		}
+		if (PositionPieceNull(pos.x + 1, pos.y - 1) && NotMySide(pos.x + 2, pos.y - 2, this_side))
+		{
+			result.emplace_back(pos.x + 2, pos.y - 2);
+		}
+		if (PositionPieceNull(pos.x + 1, pos.y + 1) && NotMySide(pos.x + 2, pos.y + 2, this_side))
+		{
+			result.emplace_back(pos.x + 2, pos.y + 2);
+		}
+		break;
+	case CChessBase::PIECE_CANNON:
+		cannon_jump_piece = 0;
+		for (int i = pos.y + 1; i < 10; i++)
+		{
+			if (map.board[pos.x][i] != PIECE_NULL)
+			{
+				if (!cannon_jump_piece)
+				{
+					cannon_jump_piece = 1;
+					continue;
+				}
+				if (NotMySide(pos.x, i, this_side))
+				{
+					result.emplace_back(pos.x, i);
+				}
+
+				break;
+			}
+			else if (!cannon_jump_piece)
+			{
+				result.emplace_back(pos.x, i);
+			}
+		}
+		cannon_jump_piece = 0;
+		for (int i = pos.y - 1; i >= 0; i--)
+		{
+			if (map.board[pos.x][i] != PIECE_NULL)
+			{
+				if (!cannon_jump_piece)
+				{
+					cannon_jump_piece = 1;
+					continue;
+				}
+				if (NotMySide(pos.x, i, this_side))
+				{
+					result.emplace_back(pos.x, i);
+				}
+
+				break;
+			}
+			else if (!cannon_jump_piece)
+			{
+				result.emplace_back(pos.x, i);
+			}
+		}
+		if (restrict_Y_move)
+		{
+			break;
+		}
+		cannon_jump_piece = 0;
+		for (int i = pos.x - 1; i >= 0; i--)
+		{
+			if (map.board[i][pos.y] != PIECE_NULL)
+			{
+				if (!cannon_jump_piece)
+				{
+					cannon_jump_piece = 1;
+					continue;
+				}
+				if (NotMySide(i, pos.y, this_side))
+				{
+					result.emplace_back(i, pos.y);
+				}
+
+				break;
+			}
+			else if (!cannon_jump_piece)
+			{
+				result.emplace_back(i, pos.y);
+			}
+		}
+		cannon_jump_piece = 0;
+		for (int i = pos.x + 1; i < 9; i++)
+		{
+			if (map.board[i][pos.y] != PIECE_NULL)
+			{
+				if (!cannon_jump_piece)
+				{
+					cannon_jump_piece = 1;
+					continue;
+				}
+				if (NotMySide(i, pos.y, this_side))
+				{
+					result.emplace_back(i, pos.y);
+				}
+
+				break;
+			}
+			else if (!cannon_jump_piece)
+			{
+				result.emplace_back(i, pos.y);
+			}
+		}
+
+		break;
+	case CChessBase::PIECE_MANDARIN:
+		if (restrict_Y_move)
+		{
+			break;
+		}
+		if (PositionInMandarinArea(pos.x + 1, pos.y + 1, this_side) && NotMySide(pos.x + 1, pos.y + 1, this_side))
+		{
+			result.emplace_back(pos.x + 1, pos.y + 1);
+		}
+		if (PositionInMandarinArea(pos.x + 1, pos.y - 1, this_side) && NotMySide(pos.x + 1, pos.y - 1, this_side))
+		{
+			result.emplace_back(pos.x + 1, pos.y - 1);
+		}
+		if (PositionInMandarinArea(pos.x - 1, pos.y + 1, this_side) && NotMySide(pos.x - 1, pos.y + 1, this_side))
+		{
+			result.emplace_back(pos.x - 1, pos.y + 1);
+		}
+		if (PositionInMandarinArea(pos.x - 1, pos.y - 1, this_side) && NotMySide(pos.x - 1, pos.y - 1, this_side))
+		{
+			result.emplace_back(pos.x - 1, pos.y - 1);
+		}
+		break;
+	case CChessBase::PIECE_KING:
+		if (NotMySide(pos.x + 1, pos.y, this_side) && ObeyRule_KingMeetKing_for_king(pos.x + 1, pos.y))
+		{
+			result.emplace_back(pos.x + 1, pos.y);
+		}
+		if (NotMySide(pos.x - 1, pos.y, this_side) && ObeyRule_KingMeetKing_for_king(pos.x - 1, pos.y))
+		{
+			result.emplace_back(pos.x - 1, pos.y);
+		}
+		if (NotMySide(pos.x, pos.y - 1, this_side) && ObeyRule_KingMeetKing_for_king(pos.x, pos.y - 1))
+		{
+			result.emplace_back(pos.x, pos.y - 1);
+		}
+		if (NotMySide(pos.x, pos.y + 1, this_side) && ObeyRule_KingMeetKing_for_king(pos.x, pos.y + 1))
+		{
+			result.emplace_back(pos.x, pos.y + 1);
+		}
+		break;
+	default:
+		break;
+	}
+
+	//检查result位置是否包含对方的王
+	for (auto& i : result)
+	{
+		if (map.board[i.x][i.y] == CChessBase::PIECE_KING && map.piece_side[i.x][i.y] == !this_side)
+		{
+			return 1;
+		}
+	}
+	return 0;
 }

@@ -16,7 +16,7 @@ CChessEngineAdapter::CChessEngineAdapter()
     elo = 0, enable_LimitStrength = 1, hash_size = 64;
     status = ENGINE_STATUS::E_INIT;
     stepTime = 0, targetStepTime = 5;
-    bestMoveRecv = 0, noBestMove = 0, mate = 0, uciOK = 0, mateRecv = 0, availableStepRecv = 0;
+    bestMoveRecv = 0, noBestMove = 0, mate = 0, uciOK = 0, mateRecv = 0, availableStepRecv = 0, checkMate = 0;
     thread_num = 8, targetStepDepth = 24;
     drop_bestMove_required = 0;
     currentPosInMove = "position startpos moves";
@@ -44,7 +44,7 @@ void CChessEngineAdapter::Reset()
         write_input("quit");
     }
     drop_bestMove_required = 0;
-    bestMoveRecv = 0, noBestMove = 0, mate = 0, uciOK = 0, mateRecv = 0;
+    bestMoveRecv.store(0), noBestMove.store(0), mate.store(0), mateRecv.store(0), checkMate.store(0), uciOK.store(0);
     //start process
     proc = bp::child(
         exeFileNames[0],
@@ -124,7 +124,7 @@ void CChessEngineAdapter::MovePiece(CChessBase::PieceMoveDesc move)
     }
 
     //重置变量
-    bestMoveRecv = 0, noBestMove = 0, mate = 0, mateRecv = 0;
+    bestMoveRecv.store(0), noBestMove.store(0), mate.store(0), mateRecv.store(0), checkMate.store(0);
     stepTime = 0;
     bestMove = { -1,-1,-1,-1 };
 
@@ -137,7 +137,7 @@ void CChessEngineAdapter::MovePiece(CChessBase::PieceMoveDesc move)
 
     //send cmd
     write_input(currentPosInMove);
-    drop_bestMove_required++;
+    drop_bestMove_required++;   //notice that bestmove of "go depth 1" should be disposed
     write_input("go depth 1");  //check if mate
     return;
 }
@@ -167,11 +167,11 @@ bool CChessEngineAdapter::CheckBestMove()
 
 CChessBase::PieceMoveDesc CChessEngineAdapter::GetBestMove()
 {
-    if (!bestMoveRecv)
+    if (!bestMoveRecv.load())
     {
         debugger_main.writelog(DWARNNING, "illegal bestMoveRecv status in CChessEngineAdapter::GetBestMove()", __LINE__);
     }
-    bestMoveRecv = 0;
+    bestMoveRecv.store(0);
 
     //校验返回值
     if (bestMove.fromx<BOARD_X_MIN || bestMove.fromx>BOARD_X_MAX || bestMove.tox<BOARD_X_MIN || bestMove.tox>BOARD_X_MAX
@@ -228,8 +228,8 @@ void CChessEngineAdapter::read_output(string line)
             drop_bestMove_required--;
         }
         
-        noBestMove = 1;
-        mateRecv = 1;   //end of cmd "go depth 1"
+        noBestMove.store(1);
+        mateRecv.store(1);   //end of cmd "go depth 1"
         status = ENGINE_STATUS::E_READY;
     }
     else if (line.find("bestmove") != string::npos)
@@ -246,7 +246,7 @@ void CChessEngineAdapter::read_output(string line)
             bestMove.tox = line[find_pos + sizeof("bestmove") + 2] - 'a';
             bestMove.toy = line[find_pos + sizeof("bestmove") + 3] - '0';
             debugger_main.writelog(DDEBUG, "get bestmove: " + to_string(bestMove.fromx) + to_string(bestMove.fromy) + to_string(bestMove.tox) + to_string(bestMove.toy), __LINE__);
-            bestMoveRecv = 1; //end of cmd "go ..."
+            bestMoveRecv.store(1); //end of cmd "go"
             status = ENGINE_STATUS::E_READY;
         }
     }
@@ -254,13 +254,31 @@ void CChessEngineAdapter::read_output(string line)
     {
         mate = 1;
     }
+    else if (line.find("mate 1") != string::npos)
+    {
+        checkMate = 1;
+        debugger_main.writelog(DWARNNING, "FOUND CHECKMATE");
+    }
     else if (line.find(": 1") != string::npos)
     {
-        availableStepsBuffer.push_back(PieceMoveDesc{ line[0] - 'a',line[1] - '0',line[2] - 'a',line[3] - '0' });
+        if (!availableStepRecv.load())
+        {
+            availableStepsBuffer.push_back(PieceMoveDesc{ line[0] - 'a',line[1] - '0',line[2] - 'a',line[3] - '0' });
+        }
     }
     else if (line.find("Nodes searched:") != string::npos)
     {
-        availableStepRecv.store(1);
+        bool expected = 0;
+        if (!availableStepRecv.compare_exchange_strong(expected, 1))   //end of cmd "go perft"
+        {
+            debugger_main.writelog(DWARNNING, "unexpected availableStepRecv value 'true' when receiving 'Nodes searched:'", __LINE__);
+        }
+        
+        debugger_main.writelog(DDEBUG, "Recv availableSteps "+to_string(availableStepsBuffer.size()), __LINE__);
+        if (availableStepsBuffer.empty())
+        {
+            //todo: no move
+        }
     }
     return;
 }

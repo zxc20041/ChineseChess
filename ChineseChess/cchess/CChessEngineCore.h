@@ -22,6 +22,7 @@ public:
 	virtual CChessBase::PieceMoveDesc GetBestMove() = 0;
 	virtual void SearchBestMove() = 0;
 	bool GetCurrentSide() const;
+	
 
 	//online
 	virtual CChessBase::CChessMap GetMap() = 0;
@@ -29,10 +30,10 @@ public:
 	
 protected:
 	virtual std::vector<CChessBase::PiecePosDesc> GetAvailableSteps(CChessBase::PiecePosDesc pos);
-	
+	bool GetCheckMate();
 	CChessBase::CChessMap map;
 	std::vector<CChessBase::PiecePosDesc> availablePositions[9][10];
-	bool side_red, current_side_red, available_steps_ready;
+	bool side_red, current_side_red, available_steps_ready, checkMate;
 	
 	CChessEngineAdapter engineAdapter;
 private:
@@ -48,6 +49,6 @@ private:
 	//合法时返回真
 	bool ObeyRule_KingMeetKing_for_king(int target_x, int target_y);
 	
-
+	bool GetCheckMate(CChessBase::PiecePosDesc pos);
 
 };

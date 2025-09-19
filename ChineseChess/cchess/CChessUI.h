@@ -18,6 +18,7 @@ class PIECE_UI
 public:
 	PIECE_UI(int x,int y, ChessPieceType type,bool side_red);
 	void rend(bool board_side_red) const;
+	
 	void update(float timeScale);
 	void Select();
 	void UnSelect();
@@ -32,6 +33,7 @@ public:
 	static bool current_side;
 private:
 	void UpdateShandow();
+	void RendShandow() const;
 	void TransformPoint(D2D1_POINT_2F& ori, D2D1_POINT_2F& trans) const;
 	static constexpr float DELTA_Y_FACTOR = 0.25F, ZOOM_FACTOR = 0.25F, SPEED_FACTOR = 1;
 	static constexpr float LIGHT_POSZ = 2048, PIECE_DEFAULT_POSZ = 8, POSZ_ZOOM_FACTOR = 50;	//assume shandow posz at 0
