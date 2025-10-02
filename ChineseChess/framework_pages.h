@@ -97,19 +97,19 @@ private:
     shared_ptr<float> audio_latency;
 
     shared_ptr<Button> returnButton,  generalButton,  graphicsButton,  audioButton;
-    shared_ptr<Button> languageButton,  extra_mode_sizeButton,  demo_mode_timePerStepButton,  extra_mode_timePerStepButton,  colorLimitButton; //gameplay
+    shared_ptr<Button> languageButton,  elo_plus_Button, elo_minus_Button; //gameplay
     shared_ptr<Button> WindowModeButton,  VsyncButton,  AntialiasingButton,  RenderResolutionButton,  ShowFramerateButton;  //graphics
     shared_ptr<Button> MusicVolumeButton,  SEVolumeButton,  ThreadMethodButton;
     shared_ptr<LABEL> describeLabel;
 
-    shared_ptr<LABEL> languageLabel,  extra_mode_sizeLabel,  demo_mode_timePerStepLabel,  extra_mode_timePerStepLabel,  colorLimitLabel;
+    shared_ptr<LABEL> languageLabel, eloLabel, elo_value_Label;
     shared_ptr<LABEL> WindowModeLabel,  VsyncLabel,  AntialiasingLabel,  RenderResolutionLabel,  ShowFramerateLabel;
     shared_ptr<LABEL> MusicVolumeLabel,  SEVolumeLabel,  ThreadMethodLabel,  MusicVolumeBar,  SEVolumeBar;
 
     void ResetPageComponents();
     void MoveBlock(float target_posx, float target_color_r, float target_color_g, float target_color_b);
 
-    constexpr static int circle_speed = 60;
+    constexpr static int circle_speed = 60, ELO_MAX = 2850, ELO_MIN = 1350, ELO_STEP_VALUE = 50;
 
     void rend_circles_BG(int refresh);
 };

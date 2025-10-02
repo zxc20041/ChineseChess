@@ -3,10 +3,7 @@
 
 struct setting_general_desc
 {
-    int extra_mode_size = 0;
-    int demo_mode_timePerStep = 2;
-    int extra_mode_timePerStep = 0;
-    int color_limit = 4;
+    int elo = 1800;
     bool language_translation = 1;
 };
 
@@ -15,7 +12,6 @@ struct setting_graphics_desc
     int MSAA = 1;
     int sampleCount = 0;
     int resolution = 3;
-    int particleDensity = 2;
     bool show_framerate = 0;
     bool window_mode = 1;
     bool vsync = 1;
@@ -81,7 +77,6 @@ struct stringTable
     std::string low = "Low";
     std::string mid = "Mid";
     std::string high = "High";
-    std::string free_view = "View Mode: Free";
     
 
 
@@ -126,17 +121,10 @@ struct stringTable
     std::string match_num = "Numbers of Matches";
     std::string win_num = "Numbers of Winnings";
 
-    std::string color_limit = "Color Num";
-    std::string color_limit_description = "Change Color Num limitation in coloring";
+    std::string elo = "PVE ELO";
+	std::string elo_description = "Set elo rating for AI, range 1350-2850.";
 
-    std::string demo_mode_timePerStep = "Demo Mode Time Per Step";
-    std::string demo_mode_timePerStep_description = "Change time per step in demo mode";
-    std::string extra_mode_timePerStep = "Extra Mode Time Per Step";
-    std::string extra_mode_timePerStep_description = "Change time per step in extra mode";
-    std::string extra_mode_size = "Extra Mode Size";
-    std::string extra_mode_size_description = "Select map size in extra mode";
-
-    std::string PE_warning = "A very small percentage of people may experience a seizure when exposed to certain visual images, including flashing lights or patterns that may appear in video games. Even people who have no history of seizures or epilepsy may have an undiagnosed condition that can cause these \"photosensitive epileptic seizures\" while playing video games. If you or any of your relatives have a history of seizures or epilepsy, consult a doctor before playing video games.\nImmediately stop playing and consult a doctor if you experience any symptoms.";
+    
 };
 
 extern setting_general_desc set1[2];

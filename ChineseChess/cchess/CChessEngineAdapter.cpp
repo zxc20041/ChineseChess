@@ -16,7 +16,7 @@ CChessEngineAdapter::CChessEngineAdapter()
     elo = 0, enable_LimitStrength = 1, hash_size = 64;
     status = ENGINE_STATUS::E_INIT;
     stepTime = 0, targetStepTime = 5;
-    bestMoveRecv = 0, noBestMove = 0, mate = 0, uciOK = 0, mateRecv = 0, availableStepRecv = 0, checkMate = 0;
+    bestMoveRecv = 0, noBestMove = 0, mate = 0, uciOK = 0, mateRecv = 0, availableStepRecv = 0, noMove = 0;
     thread_num = 8, targetStepDepth = 24;
     drop_bestMove_required = 0;
     currentPosInMove = "position startpos moves";
@@ -44,7 +44,7 @@ void CChessEngineAdapter::Reset()
         write_input("quit");
     }
     drop_bestMove_required = 0;
-    bestMoveRecv.store(0), noBestMove.store(0), mate.store(0), mateRecv.store(0), checkMate.store(0), uciOK.store(0);
+    bestMoveRecv.store(0), noBestMove.store(0), mate.store(0), mateRecv.store(0), noMove.store(0), uciOK.store(0);
     //start process
     proc = bp::child(
         exeFileNames[0],
@@ -92,6 +92,7 @@ void CChessEngineAdapter::Reset()
     {
         write_input("setoption name UCI_LimitStrength value true");
         write_input("setoption name UCI_Elo value " + to_string(elo));
+		debugger_main.writelog(DINFO, "Set engine ELO to " + to_string(elo), __LINE__);
     }
     return;
 }
@@ -124,7 +125,7 @@ void CChessEngineAdapter::MovePiece(CChessBase::PieceMoveDesc move)
     }
 
     //÷ÿ÷√±‰¡ø
-    bestMoveRecv.store(0), noBestMove.store(0), mate.store(0), mateRecv.store(0), checkMate.store(0);
+    bestMoveRecv.store(0), noBestMove.store(0), mate.store(0), mateRecv.store(0), noMove.store(0);
     stepTime = 0;
     bestMove = { -1,-1,-1,-1 };
 
@@ -146,17 +147,20 @@ EngineResult CChessEngineAdapter::GetResult()
 {
     EngineResult r;
     memset(&r, 0, sizeof(r));
+
     if (!mateRecv)
     {
         r.valid = 0;
         return r;
     }
+
     if (noBestMove && mate)
     {
         r.result = RESULT_MATE;
         r.valid = 1;
         noBestMove = 0, mate = 0;
     }
+
     return r;
 }
 
@@ -254,11 +258,6 @@ void CChessEngineAdapter::read_output(string line)
     {
         mate = 1;
     }
-    else if (line.find("mate 1") != string::npos)
-    {
-        checkMate = 1;
-        debugger_main.writelog(DWARNNING, "FOUND CHECKMATE");
-    }
     else if (line.find(": 1") != string::npos)
     {
         if (!availableStepRecv.load())
@@ -278,6 +277,7 @@ void CChessEngineAdapter::read_output(string line)
         if (availableStepsBuffer.empty())
         {
             //todo: no move
+            noMove = 1;
         }
     }
     return;

@@ -1,5 +1,6 @@
 #include"LocalPVP.h"
 #include"..\framework_base.h"
+#include"settings.h"
 using namespace std;
 using namespace CChessBase;
 using namespace debugger;
@@ -18,6 +19,7 @@ void CChessLocalPVP::Reset()
 	side_red = 1, current_side_red = 1, available_steps_ready = 0, checkMate = 0;
 	update_check_win = 0, match_over = 0, win_side = 0;
 
+	engineAdapter.SetElo(set1[0].elo);
 	engineAdapter.Reset();
 
 	memset(&map, PIECE_NULL, sizeof(map));

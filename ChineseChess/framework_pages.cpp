@@ -138,8 +138,10 @@ bool Start_Page::EnterPage()
     loading_progress = 0;
     logo_opacity = 0;
     effect_wait_changing = 0;
-    loading_progress = 1 + thread_IO_request_verify_res;
+    loading_progress = 1;
     g_rm.LoadAll();
+	g_rm.FinishLoading();
+	Page_status = PAGE_PREPARED_STATUS;
     return 1;
 }
 
@@ -277,10 +279,13 @@ bool Setting_Page::Init()
 
 
     languageButton = make_shared<Button>(1250, 300, 1400, 380, lan[0].on, g_pBrushYellow, g_pBrushBlue, g_pBrushBlack, nullptr);
-    demo_mode_timePerStepButton = make_shared<Button>(1250, 400, 1400, 480, "", g_pBrushYellow, g_pBrushBlue, g_pBrushBlack, nullptr);
-    extra_mode_sizeButton = make_shared<Button>(1250, 500, 1400, 580, "", g_pBrushYellow, g_pBrushBlue, g_pBrushBlack, nullptr);
+    elo_value_Label = make_shared<LABEL>(1250, 400, 1400, 480, to_string(set1[0].elo), g_pBrushYellow, g_pBrushBlue, g_pBrushBlack, nullptr, 5);
+    elo_plus_Button = make_shared<Button>(1420, 400, 1500, 480, "+", g_pBrushYellow, g_pBrushBlue, g_pBrushBlack, nullptr);
+    elo_minus_Button = make_shared<Button>(1150, 400, 1230, 480, "-", g_pBrushYellow, g_pBrushBlue, g_pBrushBlack, nullptr);
+    
+    /*extra_mode_sizeButton = make_shared<Button>(1250, 500, 1400, 580, "", g_pBrushYellow, g_pBrushBlue, g_pBrushBlack, nullptr);
     extra_mode_timePerStepButton = make_shared<Button>(1250, 600, 1400, 680, "", g_pBrushYellow, g_pBrushBlue, g_pBrushBlack, nullptr);
-    colorLimitButton = make_shared<Button>(1250, 700, 1400, 780, "", g_pBrushYellow, g_pBrushBlue, g_pBrushBlack, nullptr);
+    colorLimitButton = make_shared<Button>(1250, 700, 1400, 780, "", g_pBrushYellow, g_pBrushBlue, g_pBrushBlack, nullptr);*/
 
     WindowModeButton = make_shared<Button>(1250, 300, 1400, 380, lan[0].on, g_pBrushYellow, g_pBrushBlue, g_pBrushBlack, nullptr);
     VsyncButton = make_shared<Button>(1250, 400, 1400, 480, lan[0].on, g_pBrushYellow, g_pBrushBlue, g_pBrushBlack, nullptr);
@@ -302,10 +307,10 @@ bool Setting_Page::Init()
 
 
     languageLabel = make_shared<LABEL>(100, 300, 900, 380, lan[0].language_translation, g_pBrushPurple, g_pBrushBlue, g_pBrushBlack, nullptr, 1);
-    demo_mode_timePerStepLabel = make_shared<LABEL>(100, 400, 900, 480, lan[0].demo_mode_timePerStep, g_pBrushPurple, g_pBrushBlue, g_pBrushBlack, nullptr, 1);
-    extra_mode_sizeLabel = make_shared<LABEL>(100, 500, 900, 580, lan[0].extra_mode_size, g_pBrushPurple, g_pBrushBlue, g_pBrushBlack, nullptr, 1);
+    eloLabel = make_shared<LABEL>(100, 400, 900, 480, lan[0].elo, g_pBrushPurple, g_pBrushBlue, g_pBrushBlack, nullptr, 1);
+    /*extra_mode_sizeLabel = make_shared<LABEL>(100, 500, 900, 580, lan[0].extra_mode_size, g_pBrushPurple, g_pBrushBlue, g_pBrushBlack, nullptr, 1);
     extra_mode_timePerStepLabel = make_shared<LABEL>(100, 600, 900, 680, lan[0].extra_mode_timePerStep, g_pBrushPurple, g_pBrushBlue, g_pBrushBlack, nullptr, 1);
-    colorLimitLabel = make_shared<LABEL>(100, 700, 900, 780, lan[0].color_limit, g_pBrushPurple, g_pBrushBlue, g_pBrushBlack, nullptr, 1);
+    colorLimitLabel = make_shared<LABEL>(100, 700, 900, 780, lan[0].color_limit, g_pBrushPurple, g_pBrushBlue, g_pBrushBlack, nullptr, 1);*/
 
     WindowModeLabel = make_shared<LABEL>(100, 300, 900, 380, lan[0].window_mode, g_pBrushPurple, g_pBrushBlue, g_pBrushBlack, nullptr, 1);
     VsyncLabel = make_shared<LABEL>(100, 400, 900, 480, lan[0].vsync, g_pBrushPurple, g_pBrushBlue, g_pBrushBlack, nullptr, 1);
@@ -339,21 +344,9 @@ void Setting_Page::Update()
         {
             describeLabel->setText(lan[0].language_translation_description);
         }
-        else if (extra_mode_sizeButton->getFocus())
+        else if (elo_plus_Button->getFocus()|| elo_minus_Button->getFocus())
         {
-            describeLabel->setText(lan[0].extra_mode_size_description);
-        }
-        else if (demo_mode_timePerStepButton->getFocus())
-        {
-            describeLabel->setText(lan[0].demo_mode_timePerStep_description);
-        }
-        else if (extra_mode_timePerStepButton->getFocus())
-        {
-            describeLabel->setText(lan[0].extra_mode_timePerStep_description);
-        }
-        else if (colorLimitButton->getFocus())
-        {
-            describeLabel->setText(lan[0].color_limit_description);
+            describeLabel->setText(lan[0].elo_description);
         }
 
         if (languageButton->getClicked())
@@ -376,52 +369,23 @@ void Setting_Page::Update()
             generalButton->setClicked();
         }
 
-        if (extra_mode_sizeButton->getClicked())
+        if (elo_plus_Button->getClicked())
         {
-            set1[0].extra_mode_size++;
-            if (set1[0].extra_mode_size > 2)
+            set1[0].elo += ELO_STEP_VALUE;
+            if (set1[0].elo > ELO_MAX)
             {
-                set1[0].extra_mode_size = 0;
+                set1[0].elo = ELO_MIN;
             }
-            if (set1[0].extra_mode_size == 1)
-            {
-                extra_mode_sizeButton->setText(lan[0].mid);
-            }
-            else if (set1[0].extra_mode_size == 2)
-            {
-                extra_mode_sizeButton->setText(lan[0].high);
-            }
-            else
-            {
-                extra_mode_sizeButton->setText(lan[0].low);
-            }
+			elo_value_Label->setText(to_string(set1[0].elo));
         }
-        if (demo_mode_timePerStepButton->getClicked())
+        if (elo_minus_Button->getClicked())
         {
-            set1[0].demo_mode_timePerStep++;
-            if (set1[0].demo_mode_timePerStep > 5)
+            set1[0].elo -= ELO_STEP_VALUE;
+            if (set1[0].elo < ELO_MIN)
             {
-                set1[0].demo_mode_timePerStep = 0;
+                set1[0].elo = ELO_MAX;
             }
-            demo_mode_timePerStepButton->setText(to_string(set1[0].demo_mode_timePerStep * 50) + "ms");
-        }
-        if (extra_mode_timePerStepButton->getClicked())
-        {
-            set1[0].extra_mode_timePerStep++;
-            if (set1[0].extra_mode_timePerStep > 10)
-            {
-                set1[0].extra_mode_timePerStep = 0;
-            }
-            extra_mode_timePerStepButton->setText(to_string(set1[0].extra_mode_timePerStep) + "ms");
-        }
-        if (colorLimitButton->getClicked())
-        {
-            set1[0].color_limit++;
-            if (set1[0].color_limit > 8)
-            {
-                set1[0].color_limit = 3;
-            }
-            colorLimitButton->setText(to_string(set1[0].color_limit));
+            elo_value_Label->setText(to_string(set1[0].elo));
         }
     }
     else if (setting_page_index == 2)
@@ -696,16 +660,12 @@ void Setting_Page::Update()
         generalButton->setBrush1(g_pBrushRed);
 
         languageButton->activate();
-        extra_mode_sizeButton->activate();
-        demo_mode_timePerStepButton->activate();
-        extra_mode_timePerStepButton->activate();
-        colorLimitButton->activate();
+        elo_plus_Button->activate();
+        elo_minus_Button->activate();
 
         languageLabel->setShow(1);
-        extra_mode_sizeLabel->setShow(1);
-        demo_mode_timePerStepLabel->setShow(1);
-        extra_mode_timePerStepLabel->setShow(1);
-        colorLimitLabel->setShow(1);
+        elo_value_Label->setShow(1);
+        eloLabel->setShow(1);
 
         if (set1[0].language_translation == 0)
         {
@@ -717,21 +677,9 @@ void Setting_Page::Update()
             languageButton->setBrush2(g_pBrushLightGreen);
             languageButton->setText(lan[0].on);
         }
-        if (set1[0].extra_mode_size == 1)
-        {
-            extra_mode_sizeButton->setText(lan[0].mid);
-        }
-        else if (set1[0].extra_mode_size == 2)
-        {
-            extra_mode_sizeButton->setText(lan[0].high);
-        }
-        else
-        {
-            extra_mode_sizeButton->setText(lan[0].low);
-        }
-        demo_mode_timePerStepButton->setText(to_string(set1[0].demo_mode_timePerStep * 50) + "ms");
-        extra_mode_timePerStepButton->setText(to_string(set1[0].extra_mode_timePerStep) + "ms");
-        colorLimitButton->setText(to_string(set1[0].color_limit));
+        
+        elo_value_Label->setText(to_string(set1[0].elo));
+        
         describeLabel->setText(VERSION_SHORT);
     }
     else if (graphicsButton->getClicked())
@@ -933,10 +881,8 @@ bool Setting_Page::EnterPage()
     g_cm.AddButton(audioButton);
 
     g_cm.AddButton(languageButton);
-    g_cm.AddButton(demo_mode_timePerStepButton);
-    g_cm.AddButton(extra_mode_sizeButton);
-    g_cm.AddButton(extra_mode_timePerStepButton);
-    g_cm.AddButton(colorLimitButton);
+    g_cm.AddButton(elo_plus_Button);
+    g_cm.AddButton(elo_minus_Button);
 
     g_cm.AddButton(WindowModeButton);
     g_cm.AddButton(VsyncButton);
@@ -951,10 +897,8 @@ bool Setting_Page::EnterPage()
     g_cm.AddLabel(describeLabel);
 
     g_cm.AddLabel(languageLabel);
-    g_cm.AddLabel(demo_mode_timePerStepLabel);
-    g_cm.AddLabel(extra_mode_sizeLabel);
-    g_cm.AddLabel(extra_mode_timePerStepLabel);
-    g_cm.AddLabel(colorLimitLabel);
+    g_cm.AddLabel(eloLabel);
+    g_cm.AddLabel(elo_value_Label);
 
     g_cm.AddLabel(WindowModeLabel);
     g_cm.AddLabel(VsyncLabel);

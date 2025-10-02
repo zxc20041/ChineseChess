@@ -43,7 +43,7 @@ const char* filename_dbg = "debug.log";
 Resource res[128];
 
 Read_info record;
-debug_ex debugger_main(1);
+debug_ex debugger_main(0);
 ComponentManager g_cm;
 ResourceManager g_rm;
 PageManager g_PageManager;
@@ -173,6 +173,33 @@ void debug_ex::setSurfix(string surfix)
 {
     log_surfix = surfix;
     return;
+}
+
+void debug_ex::RegistTimer(string key)
+{
+	timer_map.insert({ key,DebuggerTimer() });
+	return;
+}
+
+int debug_ex::getTimerAccess(string key)
+{
+	auto it = timer_map.find(key);
+    if(it == timer_map.end())
+    {
+        return -1;
+	}
+    return timer_map.find(key)->second.access_num;
+}
+
+float debug_ex::getTime(string key)
+{
+    auto it = timer_map.find(key);
+    if (it == timer_map.end())
+    {
+        return -1;
+    }
+	it->second.access_num++;
+	return it->second.timer.stop_timer();
 }
 
 void debug_ex::reset()
@@ -1821,7 +1848,6 @@ Effect::Effect(int index, float posx, float posy)
     case 221:
     case 301:
     case 302:
-    case 401:
     case 501:
         time = 0;
         
@@ -1873,7 +1899,6 @@ void Effect::update()
     case 221:
     case 301:
     case 302:
-    case 401:
     
         time += frmtm;
         if (time > 4)
@@ -1889,7 +1914,7 @@ void Effect::update()
     return;
 }
 
-void Effect::rend()
+void Effect::rend() const
 {
     if (!active|| thread_IO_request_verify_res < 8)
     {
@@ -2007,22 +2032,6 @@ void Effect::rend()
             opacity_buf = 0.8f * sinf((time - 2) * 0.5f * PI);
         }
         DrawBitmap_1(file_corrupt_tagline, D2D1::RectF(posx, posy, posx + 400, posy + 100), opacity_buf);
-        break;
-    case 401:
-        if (time < 1)
-        {
-            opacity_buf = 0.8f * sinf(time * 0.5 * PI);
-        }
-        else if (time < 3)
-        {
-            opacity_buf = 0.8f;
-        }
-        else
-        {
-            opacity_buf = 0.8f * sinf((time - 2) * 0.5f * PI);
-        }
-        FillRectangle_1(posx, posy, posx + 400, posy + 100, g_pBrushWhite, opacity_buf);
-        DrawTextA_1(lan[0].free_view, g_pTextFormat, posx, posy, posx + 400, posy + 100, g_pBrushBlack, opacity_buf);
         break;
     default:
         break;
@@ -2803,132 +2812,135 @@ void input()
     static float expand_input_time = 0.1f;
     static char expand_input_last_key = NULL;
     
-    
-    clicking = 0, rightclick = 0, keyw = 0, keya = 0, keys = 0, keyd = 0, keyTab = 0, keyESC = 0, keyComb = 0, keySpace=0;
-    if (hWnd == FocusWindow)
+    clicking = 0, rightclick = 0,
+        keyw = 0, keya = 0, keys = 0, keyd = 0, 
+        keyTab = 0, keyESC = 0, keyComb = 0, keySpace=0;
+
+    if (hWnd != FocusWindow)
     {
-        if (KEY_DOWN(27))
-        {
-            keyESC = 1;
-        }
-        if (KEY_DOWN('W'))
-        {
-            keyw = 1;
-        }
-        if (KEY_DOWN('A'))
-        {
-            keya = 1;
-        }
-        if (KEY_DOWN('S'))
-        {
-            keys = 1;
-        }
-        if (KEY_DOWN('D'))
-        {
-            keyd = 1;
-        }
-        if (KEY_DOWN('Z') && KEY_DOWN('X') && KEY_DOWN('C'))
-        {
-            keyComb = 1;
-        }
-        //debug
-        
-        if (KEY_DOWN(VK_F2))
-        {
-            debugger_main.set_osd_enable(1);
-#ifdef _DEBUG
-            rendUIboxes = 1;
+        return;
+    }
+
+    if (KEY_DOWN(27))
+    {
+        keyESC = 1;
+    }
+    if (KEY_DOWN('W'))
+    {
+        keyw = 1;
+    }
+    if (KEY_DOWN('A'))
+    {
+        keya = 1;
+    }
+    if (KEY_DOWN('S'))
+    {
+        keys = 1;
+    }
+    if (KEY_DOWN('D'))
+    {
+        keyd = 1;
+    }
+    if (KEY_DOWN('Z') && KEY_DOWN('X') && KEY_DOWN('C'))
+    {
+        keyComb = 1;
+    }
+    //debug
+#ifdef _DEBUG        
+    if (KEY_DOWN(VK_F2))
+    {
+        debugger_main.set_osd_enable(1);
+        rendUIboxes = 1;
+    }
+    else
+    {
+        debugger_main.set_osd_enable(0);
+        rendUIboxes = 0;
+    }
 #endif // _DEBUG
-
-        }
-        else
-        {
-            debugger_main.set_osd_enable(0);
-#ifdef _DEBUG
-            rendUIboxes = 0;
-#endif // _DEBUG
-        }
-
-        if (KEY_DOWN(VK_TAB))
-        {
-            keyTab = 1;
-        }
-        if (KEY_DOWN(VK_SPACE))
-        {
-            keySpace = 1;
-        }
+    if (KEY_DOWN(VK_TAB))
+    {
+        keyTab = 1;
+    }
+    if (KEY_DOWN(VK_SPACE))
+    {
+        keySpace = 1;
+    }
         
-        if (KEY_DOWN(VK_LBUTTON))
-        {
-            clicking = 1;
-        }
-        if (KEY_DOWN(VK_RBUTTON))
-        {
-            rightclick = 1;
-        }
-        POINT cursorPos;
-        GetCursorPos(&cursorPos);                       //获取鼠标在屏幕上的位置
-        ScreenToClient(hWnd, &cursorPos);
-        //适应窗口大小
-        cpos.x = 1600.0f * cursorPos.x / (rc.right - rc.left);
-        cpos.y = 900.0f * cursorPos.y / (rc.bottom - rc.top);
+    if (KEY_DOWN(VK_LBUTTON))
+    {
+        clicking = 1;
+    }
+    if (KEY_DOWN(VK_RBUTTON))
+    {
+        rightclick = 1;
+    }
+    POINT cursorPos;
+    GetCursorPos(&cursorPos);                       //获取鼠标在屏幕上的位置
+    ScreenToClient(hWnd, &cursorPos);
+    //适应窗口大小
+    cpos.x = 1600.0f * cursorPos.x / (rc.right - rc.left);
+    cpos.y = 900.0f * cursorPos.y / (rc.bottom - rc.top);
 
-        //debug
-        if (input_expand)
-        {
-            expand_input_key = NULL;
+    //debug
+    if (input_expand)
+    {
+        expand_input_key = NULL;
 
-            for (int i = 48; i < 91; i++)
+        for (int i = 48; i < 91; i++)
+        {
+            if (KEY_DOWN(i))
             {
-                if (KEY_DOWN(i))
+                if (i < 58)
                 {
-                    if (i < 58)
-                    {
-                        expand_input_key = i;
-                    }
-                    else if (GetKeyState(VK_CAPITAL))
-                    {
-                        expand_input_key = i;
-                    }
-                    else
-                    {
-                        expand_input_key = i + 32;
-                    }
-
-
+                    expand_input_key = i;
                 }
-            }
-            if (KEY_DOWN(8))//backspace
-            {
-                expand_input_key = 35;
-            }
-            if (KEY_DOWN(13))//enter
-            {
-                expand_input_key = 36;
-            }
-
-
-            if (expand_input_key == expand_input_last_key && expand_input_last_key != NULL)
-            {
-                expand_input_time += frmtm;
-                if (expand_input_time > 0.5f)
+                else if (GetKeyState(VK_CAPITAL))
                 {
-                    expand_input_time = 0;
+                    expand_input_key = i;
                 }
                 else
                 {
-                    expand_input_key = NULL;
+                    expand_input_key = i + 32;
                 }
+
+
+            }
+        }
+        if (KEY_DOWN(8))//backspace
+        {
+            expand_input_key = 35;
+        }
+        if (KEY_DOWN(13))//enter
+        {
+            expand_input_key = 36;
+        }
+
+
+        if (expand_input_key == expand_input_last_key && expand_input_last_key != NULL)
+        {
+            expand_input_time += frmtm;
+            if (expand_input_time > 0.5f)
+            {
+                expand_input_time = 0;
             }
             else
             {
-                expand_input_time = 0;
-                expand_input_last_key = expand_input_key;
+                expand_input_key = NULL;
             }
-
         }
-    }
+        else
+        {
+            expand_input_time = 0;
+            expand_input_last_key = expand_input_key;
+        }
 
+    }
+    
+    if (debugger_main.getTimerAccess("input") == 0)
+    {
+        debugger_main.writelog(DDEBUG, to_string(debugger_main.getTime("input")) + "s first input", __LINE__);
+    }
     return;
 }
 
@@ -3067,14 +3079,7 @@ void CreateD3DResource(HWND hWnd)
     fullscreenDesc.RefreshRate.Numerator = 0;
     fullscreenDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
     fullscreenDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_PROGRESSIVE;
-    if (set2[0].window_mode)
-    {
-        fullscreenDesc.Windowed = 1;
-    }
-    else
-    {
-        fullscreenDesc.Windowed = 0;
-    }
+    fullscreenDesc.Windowed = set2[0].window_mode;
 
     if (pD3DDevice == NULL)
     {
@@ -4251,7 +4256,7 @@ void update()
     t_end = Clock::now();
     durnanosec = chrono::duration_cast<std::chrono::nanoseconds>(t_end - t_start).count();
     frmtm = (float)durnanosec / 1000000000;
-    //g_nm.heartBeat_time -= frmtm;
+
     t_start = t_end;
     dur20 += durnanosec;
     nframe++;
@@ -4261,7 +4266,7 @@ void update()
         nframe = 0;
         dur20 = 0;
     }
-    //update_target_page();
+
     input();
 
     wheel_move_value = 0;
@@ -4352,7 +4357,7 @@ void init_once()
         set2[0].resolution = 1;
         set2[1].resolution = 1;
     }
-    RECT adj;
+    RECT adj{};
     adj.left = 50;
     adj.top = 50;
     adj.right = orix + 50;
@@ -4488,7 +4493,7 @@ void init_once()
             break;
         }
     }
-    debugger_main.writelog(0,"Window resized @" + to_string(window_x) + "x" + to_string(window_y));
+    debugger_main.writelog(0, "Window resized @" + to_string(window_x) + "x" + to_string(window_y) + (set2[0].window_mode ? string(" windowed") : string(" fullscreen")));
 
     hThreadAudio = (HANDLE)_beginthreadex(NULL, 0, ThreadPlayMusic, NULL, 0, NULL);	//创建线程
     if (hThreadAudio == 0)
@@ -5419,6 +5424,10 @@ void PageManager::SwitchPage_implement()
     currentPage = nextPage;
     nextPage = nullptr;
     debugger_main.writelog(DDEBUG, "in PageManager::SwitchPage_implement() switching page_index=" + to_string(currentPage->getPageIndex()), __LINE__);
+    if (currentPage->getPageIndex() == PAGE_INTRO)
+    {
+        debugger_main.getTime("page_loaded");
+    }
     return;
 }
 

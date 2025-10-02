@@ -57,7 +57,7 @@ private:
 	ENGINE_STATUS status;
 
 	bool enable_LimitStrength;
-	std::atomic<bool> bestMoveRecv, noBestMove, mate, uciOK, mateRecv, availableStepRecv, checkMate;
+	std::atomic<bool> bestMoveRecv, noBestMove, mate, uciOK, mateRecv, availableStepRecv, noMove;
 	std::atomic<int> drop_bestMove_required;
 	int elo, targetStepDepth;
 

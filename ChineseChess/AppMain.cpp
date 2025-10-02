@@ -35,7 +35,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     UNREFERENCED_PARAMETER(lpCmdLine);
 
     // TODO: 在此处放置代码。
-
+	debugger_main.RegistTimer("render");
+    debugger_main.RegistTimer("input");
+	debugger_main.RegistTimer("page_loaded");
     // 初始化全局字符串
     LoadString(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
     LoadString(hInstance, IDC_CHINESECHESS, szWindowClass, MAX_LOADSTRING);
@@ -59,7 +61,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         return 255;
     }
     // 主消息循环:
-
+    FocusWindow = hWnd;
     static float checkfocustime = 0;
     while (1)
     {
@@ -72,15 +74,13 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         {
             break;
         }
-        if (checkfocustime > 0.1)
+        if (checkfocustime > 0.1f)
         {
             FocusWindow = GetFocus();
             checkfocustime = 0;
         }
-        else
-        {
-            checkfocustime += frmtm;
-        }
+        checkfocustime += frmtm;
+        
         Sleep(1);
     }
     DestroyWindow(hWnd);
@@ -96,7 +96,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 //
 ATOM MyRegisterClass(HINSTANCE hInstance)
 {
-    WNDCLASSEX wcex;
+    WNDCLASSEX wcex{};
 
     wcex.cbSize = sizeof(WNDCLASSEX);
 
@@ -205,6 +205,7 @@ void render()
     HRESULT hr = S_OK;
     DrawCallNum = 0;
     debugger_main.reset();
+	
     update();
     static TIMER timer;
     while (main_thread_render_blocked > 0)
@@ -279,6 +280,14 @@ void render()
         Sleep(1000);
         quit_single = 1;
         return;
+    }
+    if (debugger_main.getTimerAccess("render") == 0)
+    {
+        debugger_main.writelog(DDEBUG, to_string(debugger_main.getTime("render")) + "s first frame rended", __LINE__);
+    }
+    if (debugger_main.getTimerAccess("page_loaded") == 1)
+    {
+        debugger_main.writelog(DDEBUG, to_string(debugger_main.getTime("page_loaded")) + "s first page rended", __LINE__);
     }
     return;
 }

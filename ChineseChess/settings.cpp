@@ -20,14 +20,8 @@ void saveConfig()
     writebuf[index++] = addFormat(lan[1].language_translation);
     writebuf[index++] = to_string(set1[0].language_translation);
     
-    writebuf[index++] = addFormat(lan[1].demo_mode_timePerStep);
-    writebuf[index++] = to_string(set1[0].demo_mode_timePerStep);
-    writebuf[index++] = addFormat(lan[1].extra_mode_size);
-    writebuf[index++] = to_string(set1[0].extra_mode_size);
-    writebuf[index++] = addFormat(lan[1].extra_mode_timePerStep);
-    writebuf[index++] = to_string(set1[0].extra_mode_timePerStep);
-    writebuf[index++] = addFormat(lan[1].color_limit);
-    writebuf[index++] = to_string(set1[0].color_limit);
+    writebuf[index++] = addFormat(lan[1].elo);
+    writebuf[index++] = to_string(set1[0].elo);
     
     writebuf[index++] = addFormat(lan[1].window_mode);
     writebuf[index++] = to_string(set2[0].window_mode);
@@ -72,23 +66,10 @@ void readConfig_config()
         {
             set1[0].language_translation = atoi(readbuf[i + 1].c_str());
         }
-        else if (readbuf[i] == addFormat(lan[1].demo_mode_timePerStep))
+        else if (readbuf[i] == addFormat(lan[1].elo))
         {
-            set1[0].demo_mode_timePerStep = atoi(readbuf[i + 1].c_str());
+            set1[0].elo = atoi(readbuf[i + 1].c_str());
         }
-        else if (readbuf[i] == addFormat(lan[1].extra_mode_size))
-        {
-            set1[0].extra_mode_size = atoi(readbuf[i + 1].c_str());
-        }
-        else if (readbuf[i] == addFormat(lan[1].extra_mode_timePerStep))
-        {
-            set1[0].extra_mode_timePerStep = atoi(readbuf[i + 1].c_str());
-        }
-        else if (readbuf[i] == addFormat(lan[1].color_limit))
-        {
-            set1[0].color_limit = atoi(readbuf[i + 1].c_str());
-        }
-
         else if (readbuf[i] == addFormat(lan[1].window_mode))
         {
             set2[0].window_mode = atoi(readbuf[i + 1].c_str());
@@ -260,17 +241,9 @@ void readConfig_lan()
         {
             lan[2].load_failed = readbuf[i + 1];
         }
-        else if (readbuf[i] == addFormat("demo_mode_timePerStep"))
+        else if (readbuf[i] == addFormat("elo"))
         {
-            lan[2].demo_mode_timePerStep = readbuf[i + 1];
-        }
-        else if (readbuf[i] == addFormat("extra_mode_timePerStep"))
-        {
-            lan[2].extra_mode_timePerStep = readbuf[i + 1];
-        }
-        else if (readbuf[i] == addFormat("extra_mode_size"))
-        {
-            lan[2].extra_mode_size = readbuf[i + 1];
+            lan[2].elo = readbuf[i + 1];
         }
 
         else if (readbuf[i] == addFormat("enter_username"))
@@ -312,10 +285,6 @@ void readConfig_lan()
         else if (readbuf[i] == addFormat("copy succeed"))
         {
             lan[2].copy_succeed = readbuf[i + 1];
-        }
-        else if (readbuf[i] == addFormat("color_limit"))
-        {
-            lan[2].color_limit = readbuf[i + 1];
         }
         else if (readbuf[i] == addFormat("copy failed"))
         {
@@ -361,10 +330,6 @@ void readConfig_lan()
         {
             lan[2].win_num = readbuf[i + 1];
         }
-        else if (readbuf[i] == addFormat("free_view"))
-        {
-            lan[2].free_view= readbuf[i + 1];
-        }
     }
     return;
 }
@@ -402,21 +367,9 @@ void readConfig()
         {
             lan[2].language_translation_description = readbuf[i + 1];
         }
-        else if (readbuf[i] == addFormat("demo_mode_timePerStep_description"))
+        else if (readbuf[i] == addFormat("elo_description"))
         {
-            lan[2].demo_mode_timePerStep_description = readbuf[i + 1];
-        }
-        else if (readbuf[i] == addFormat("extra_mode_timePerStep_description"))
-        {
-            lan[2].extra_mode_timePerStep_description = readbuf[i + 1];
-        }
-        else if (readbuf[i] == addFormat("extra_mode_size_description"))
-        {
-            lan[2].extra_mode_size_description = readbuf[i + 1];
-        }
-        else if (readbuf[i] == addFormat("color_limit_description"))
-        {
-            lan[2].color_limit_description = readbuf[i + 1];
+            lan[2].elo_description = readbuf[i + 1];
         }
         else if (readbuf[i] == addFormat("window_mode_description"))
         {
@@ -459,12 +412,6 @@ void readConfig()
             lan[2].user_agreement = readbuf[i + 1];
             lan[2].user_agreement += "\n";
             lan[2].user_agreement += readbuf[i + 2];
-        }
-        else if (readbuf[i] == addFormat("PE_warning"))
-        {
-            lan[2].PE_warning = readbuf[i + 1];
-            lan[2].PE_warning += "\n";
-            lan[2].PE_warning += readbuf[i + 2];
         }
     }
     if (set1[0].language_translation)

@@ -5,7 +5,7 @@ using namespace debugger;
 
 ALCdevice* device;
 ALCcontext* context;
-debug_ex debugger_audio(1);
+debug_ex debugger_audio(0);
 
 ALcoms ALogg[32];
 AudioManager g_am;

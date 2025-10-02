@@ -252,7 +252,7 @@ private:
 public:
     Effect(int index, float posx, float posy);
     void update();
-    void rend();
+    void rend() const;
     bool getActive();
 
     constexpr static int BLACK_SWITCH = 5;
@@ -656,7 +656,7 @@ namespace debugger
 class debug_ex
 {
 public:
-    
+    debug_ex(bool enable);
     string logbuf[logbuf_length];
     void add_output_continuous(string content);
     void add_output_space(string content);
@@ -665,15 +665,29 @@ public:
     void reset();
     void rend();
     void set_osd_enable(bool enable);
-    debug_ex(bool enable);
+    
     void writelog(int type,string content, int line = 0);
     void setSurfix(string surfix);
+	void RegistTimer(string key);
+	int getTimerAccess(string key);
+	float getTime(string key);
 private:
+    struct DebuggerTimer
+    {
+        DebuggerTimer()
+        {
+            timer.start_timer();
+			access_num = 0;
+        }
+        TIMER timer;
+		int access_num;
+    };
     string on_screen_output_content;
     string tagline_content[16];
     float tagline_time_remain[16];
     bool osd_enable;
     string log_surfix;
+    unordered_map<string, DebuggerTimer> timer_map;
     //string log_filename;
 };
 
