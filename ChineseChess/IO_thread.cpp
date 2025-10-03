@@ -332,14 +332,8 @@ void fileinit()
         writelog("File not found: ./save/config.dat not exist!");
         writebuf[index++] = addFormat(lan[1].language_translation);
         writebuf[index++] = to_string(set1[1].language_translation);
-        writebuf[index++] = addFormat(lan[1].extra_mode_size);
-        writebuf[index++] = to_string(set1[1].extra_mode_size);
-        writebuf[index++] = addFormat(lan[1].demo_mode_timePerStep);
-        writebuf[index++] = to_string(set1[1].demo_mode_timePerStep);
-        writebuf[index++] = addFormat(lan[1].extra_mode_timePerStep);
-        writebuf[index++] = to_string(set1[1].extra_mode_timePerStep);
-        writebuf[index++] = addFormat(lan[1].color_limit);
-        writebuf[index++] = to_string(set1[1].color_limit);
+        writebuf[index++] = addFormat(lan[1].elo);
+        writebuf[index++] = to_string(set1[1].elo);
         writebuf[index++] = addFormat(lan[1].window_mode);
         writebuf[index++] = to_string(set2[1].window_mode);
         writebuf[index++] = addFormat(lan[1].vsync);
