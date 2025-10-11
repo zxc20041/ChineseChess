@@ -163,6 +163,7 @@
     <ClInclude Include="cchess\LocalPVP.h" />
     <ClInclude Include="cchess\pages\ChineseChess.h" />
     <ClInclude Include="cchess\pages\ChineseChessPVE.h" />
+    <ClInclude Include="File_IO.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="framework_base.h" />
     <ClInclude Include="framework_pages.h" />
@@ -182,6 +183,7 @@
     <ClCompile Include="cchess\LocalPVP.cpp" />
     <ClCompile Include="cchess\pages\ChineseChess.cpp" />
     <ClCompile Include="cchess\pages\ChineseChessPVE.cpp" />
+    <ClCompile Include="File_IO.cpp" />
     <ClCompile Include="framework_base.cpp" />
     <ClCompile Include="framework_pages.cpp" />
     <ClCompile Include="IO_thread.cpp" />
