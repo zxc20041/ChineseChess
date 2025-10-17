@@ -9,22 +9,48 @@ using namespace FileManager_ns;
 
 extern debug_ex debugger_audio;
 
-void FILE_INFO::AppendLine(const std::string& content)
+void FILE_INFO::AppendLine(const std::string& _content)
 {
+	content->push_back(_content);
+	line_num++;
+	return;
 }
 
 void FILE_INFO::AppendKeyValue(const std::string& key, const std::string& value)
 {
+	content->push_back(Key_Format(key));
+	content->push_back(value);
+	line_num += 2;
+	return;
 }
 
 string FILE_INFO::GetValueByKey(const std::string& key)
 {
+	for (size_t i = 0; i < content->size(); i++)
+	{
+		if ((*content)[i] == Key_Format(key)) 
+		{
+			return (*content)[i + 1];
+		}
+	}
 	return string();
+}
+
+int FileManager_ns::FILE_INFO::GetIntValueByKey(const std::string& key)
+{
+	for (size_t i = 0; i < content->size(); i++)
+	{
+		if ((*content)[i] == Key_Format(key))
+		{
+			return atoi((*content)[i + 1].c_str());
+		}
+	}
+	return 0;
 }
 
 string FILE_INFO::Key_Format(const std::string& key)
 {
-	return string();
+	return "[" + key + "]";
 }
 
 FileManager::FileManager()
@@ -36,6 +62,13 @@ FileManager::~FileManager()
 }
 
 FILE_INFO FileManager::ReadFile(const std::string& filename, const std::string& expected_md5)
+{
+	//verify md5
+
+	return FILE_INFO();
+}
+
+FILE_INFO FileManager_ns::FileManager::ReadFile(const std::string& filename, const bool verify)
 {
 	return FILE_INFO();
 }
@@ -73,4 +106,25 @@ bool FileManager::Certfile(const std::string& filename)
 bool FileManager::md5_verify(const std::string& filename, const std::string& expected_md5)
 {
 	return false;
+}
+
+FileManager::VERIFY_INFO FileManager::GetFileVerifyInfo(const std::string& filename)
+{
+	VERIFY_INFO result;
+	//.dat->.check
+	string verify_filename = filename.substr(0, filename.length() - 3) + ".check";
+	FILE_INFO verify_file = ReadFile_impl(verify_filename);
+	if (verify_file.valid && verify_file.line_num >= 2)
+	{
+		result.private_value = verify_file.GetIntValueByKey("private_value");
+		result.md5 = verify_file.GetValueByKey("md5");
+		result.valid = 1;
+	}
+	else
+	{
+		result.private_value = 0;
+		result.md5 = "";
+		result.valid = 0;
+	}
+	return result;
 }

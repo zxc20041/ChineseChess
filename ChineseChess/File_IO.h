@@ -23,6 +23,7 @@ namespace FileManager_ns
 		void AppendLine(const std::string& content);
 		void AppendKeyValue(const std::string& key, const std::string& value);
 		std::string GetValueByKey(const std::string& key);
+		int GetIntValueByKey(const std::string& key);
 		int line_num;
 		shared_ptr<vector<std::string>> content;
 		bool valid;
@@ -38,6 +39,7 @@ namespace FileManager_ns
 
 
 		FILE_INFO ReadFile(const std::string& filename, const std::string& expected_md5);
+		FILE_INFO ReadFile(const std::string& filename, const bool verify = 0);
 
 		void SaveConfig();
 		void ReadConfig();
@@ -50,10 +52,16 @@ namespace FileManager_ns
 		void WriteFile(const std::string& filename, FILE_INFO file_content, bool certify = 0);
 		
 	private:
+		struct VERIFY_INFO
+		{
+			int private_value;
+			std::string md5;
+			bool valid;
+		};
 		FILE_INFO ReadFile_impl(const std::string& filename);
 		void WriteFile_impl(const std::string& filename, FILE_INFO file_content);
 		bool Certfile(const std::string& filename);
 		bool md5_verify(const std::string& filename, const std::string& expected_md5);
-		
+		VERIFY_INFO GetFileVerifyInfo(const std::string& filename);
 	};
 }
