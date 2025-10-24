@@ -1,6 +1,7 @@
 #include<vector>
 #include<queue>
 #include<string>
+#include<mutex>
 
 namespace FileManager_ns
 {
@@ -83,15 +84,15 @@ namespace FileManager_ns
 			std::string md5;
 			bool valid = 0;
 		};
-		enum IO_TYPE
+		enum class IO_TYPE
 		{
 			ReadFile,
 			WriteFile,
-			Certfile,
+			Certfile
 		};
 		struct IO_DESC
 		{
-			string fileName;
+			std::string fileName;
 			VERIFY_INFO fileData;
 			IO_TYPE op_type;
 			bool verify = 0;
@@ -100,11 +101,12 @@ namespace FileManager_ns
 		void WriteFile_impl(const std::string& filename, FILE_INFO file_content);
 		void Certfile_impl(const std::string& filename);
 		bool md5_verify(const std::string& filename, const std::string& expected_md5);
-		string GetFileMD5(const std::string& filename);
+		std::string GetFileMD5(const std::string& filename);
 		VERIFY_INFO CalcFileCertInfo(const std::string& filename);
 		VERIFY_INFO GetFileCertInfo(const std::string& filename);
 
-
-		shared_ptr<queue<IO_DESC>> asio_queue;
+		
+		std::queue<IO_DESC> asio_queue;
+		std::mutex asio_queue_mutex;
 	};
 }

@@ -4,6 +4,8 @@
 #include "thread_communicate.h"
 #include "File_IO.h"
 
+
+
 using namespace std;
 using namespace FileManager_ns;
 using namespace debugger;
@@ -81,7 +83,7 @@ void FileManager::Init()
 
 FILE_INFO FileManager::ReadFile(const std::string& filename, const std::string& expected_md5)
 {
-	if(expected_md5.empty())
+	if (expected_md5.empty())
 	{
 		return ReadFile_impl(filename);
 	}
@@ -114,6 +116,7 @@ FILE_INFO FileManager_ns::FileManager::ReadFile(const std::string& filename, con
 
 void FileManager::WriteFile(const std::string& filename, FILE_INFO file_content, bool certify)
 {
+	
 }
 
 void FileManager::Certfile(const std::string& filename)
@@ -317,3 +320,4 @@ FileManager::VERIFY_INFO FileManager::GetFileCertInfo(const std::string& filenam
 	}
 	return result;
 }
+
