@@ -94,10 +94,6 @@ FILE_INFO FileManager::ReadFile(const std::string& filename, const std::string& 
 	return ReadFile_impl(filename);
 }
 
-FILE_INFO FileManager_ns::FileManager::ReadFile(const std::string& filename, const bool verify)
-{
-	return FILE_INFO();
-}
 
 void FileManager::SaveConfig()
 {
@@ -111,34 +107,186 @@ void FileManager::RemoveFile(const std::string& filename)
 {
 }
 
-void FileManager::WriteFile(const std::string& filename, FILE_INFO file_content, bool certify)
-{
-}
-
-FILE_INFO FileManager::ReadFile_impl(const std::string& filename)
+FILE_INFO FileManager_ns::FileManager::ReadFile(const std::string& filename, const bool verify)
 {
 	return FILE_INFO();
 }
 
-void FileManager::WriteFile_impl(const std::string& filename, FILE_INFO file_content)
+void FileManager::WriteFile(const std::string& filename, FILE_INFO file_content, bool certify)
 {
 }
 
-bool FileManager::Certfile(const std::string& filename)
+void FileManager::Certfile(const std::string& filename)
 {
-	return false;
+	return;
 }
+
+bool FileManager_ns::FileManager::VerifyFile(const std::string& filename, const std::string& expected_md5)
+{
+	if (expected_md5.empty())
+	{
+		return true;
+	}
+	return GetFileMD5(filename) == expected_md5;
+}
+
+FILE_INFO FileManager::ReadFile_impl(const std::string& filename)
+{
+	FILE_INFO fileData;
+	string linebuf;
+	ifstream file;
+	int num = 0;
+	file.open(filename, ios::in);
+	if (!file.is_open())
+	{
+		g_am.PlayEffectSound("ioerror");
+		g_cm.CreateEffect(301, 400, 50);
+		debugger_main.writelog(DWARNNING, "ReadFile failed! " + filename, __LINE__);
+		return FILE_INFO(0);
+	}
+	while (getline(file, linebuf))
+	{
+		if (linebuf.empty())
+		{
+			continue;
+		}
+		else
+		{
+			fileData.content->push_back(linebuf);
+			num++;
+			if (num == FILE_LINE_MAX_NUM)
+			{
+				debugger_main.writelog(DWARNNING, "lines beyond max_num limit in FileManager::ReadFile_impl()! " + to_string(FILE_LINE_MAX_NUM) + " " + string(filename), __LINE__);
+				break;
+			}
+		}
+	}
+	file.close();
+	fileData.line_num = num;
+	fileData.valid = true;
+	fileData.io_complete.store(1);
+	return fileData;
+}
+
+void FileManager::WriteFile_impl(const std::string& filename, FILE_INFO file_content)
+{
+	if (file_content.valid == 0)
+	{
+		debugger_main.writelog(DWARNNING, "WriteFile Failed since file_content invalid! " + filename, __LINE__);
+		return;
+	}
+	ofstream file;
+	string linebuf;
+	file.open(filename, ios::out);
+	
+	if (!file.is_open())
+	{
+		g_am.PlayEffectSound("ioerror");
+		g_cm.CreateEffect(301, 400, 50);
+		debugger_main.writelog(DWARNNING, "WriteFile Error! " + filename, __LINE__);
+		return;
+	}
+	for (int i = 0; i < file_content.line_num; i++)
+	{
+		file << file_content.content->at(i) << endl;
+	}
+	file.close();
+	file_content.io_complete.store(1);
+	return;
+}
+
+void FileManager_ns::FileManager::Certfile_impl(const std::string& filename)
+{
+	VERIFY_INFO result = CalcFileCertInfo(filename);
+	if (!result.valid)
+	{
+		debugger_main.writelog(DWARNNING, "Certfile_impl: CalcFileCertInfo failed for file " + filename, __LINE__);
+		return;
+	}
+	FILE_INFO verify_file(1);
+	verify_file.AppendLine(result.md5);
+	verify_file.AppendLine(to_string(result.private_value));
+	//.dat->.check
+	string verify_filename = filename.substr(0, filename.length() - 3) + ".check";
+	WriteFile_impl(verify_filename, verify_file);
+	return;
+}
+
 
 bool FileManager::md5_verify(const std::string& filename, const std::string& expected_md5)
 {
-	return false;
+	if (expected_md5.empty() || NO_HASH_CHECK)
+	{
+		return true;
+	}
+	return GetFileMD5(filename) == filename;
 }
 
-FileManager::VERIFY_INFO FileManager::GetFileVerifyInfo(const std::string& filename)
+string FileManager_ns::FileManager::GetFileMD5(const std::string& filename)
+{
+	if (NO_HASH_CHECK)
+	{
+		return string();
+	}
+	MD5_CTX ctx;
+	int len = 0, check = 0;
+	unsigned char buffer[1024] = { 0 };
+	unsigned char digest[16] = { 0 };
+
+	FILE* pFile = 0;
+	errno_t err;
+
+	err = fopen_s(&pFile, filename.c_str(), "rb");
+
+	if (pFile == 0 || err != 0)
+	{
+		debugger_main.writelog(DWARNNING, "Open file failed! " + filename, __LINE__);
+		return string();
+	}
+	MD5_Init(&ctx);
+	while ((len = fread(buffer, 1, 1020, pFile)) > 0)
+	{
+		MD5_Update(&ctx, buffer, len);
+	}
+
+	MD5_Final(digest, &ctx);
+
+	fclose(pFile);
+
+	char buf[33] = { 0 };
+	char tmp[3] = { 0 };
+	for (int i = 0; i < 16; i++)
+	{
+		sprintf_s(tmp, "%02X", digest[i]);
+		strcat_s(buf, tmp);
+	}
+	return string(buf);
+}
+
+FileManager::VERIFY_INFO FileManager_ns::FileManager::CalcFileCertInfo(const std::string& filename)
+{
+	VERIFY_INFO info;
+	info.md5 = GetFileMD5(filename);
+	info.private_value = 0;
+	if (info.md5.length() < 32)
+	{
+		info.valid = 0;
+		return info;
+	}
+	info.private_value = (int)info.md5[1] * (int)info.md5[10] + (int)info.md5[2] * (int)info.md5[9] + (int)info.md5[4] * (int)info.md5[8];
+	info.private_value *= (int)info.md5[14] + (int)info.md5[6];
+	info.private_value /= (int)info.md5[3] / 3 + 1;
+	info.private_value += (int)info.md5[5] * (int)info.md5[7];
+	info.valid = 1;
+	return info;
+}
+
+FileManager::VERIFY_INFO FileManager::GetFileCertInfo(const std::string& filename)
 {
 	VERIFY_INFO result;
 	//.dat->.check
 	string verify_filename = filename.substr(0, filename.length() - 3) + ".check";
+
 	FILE_INFO verify_file = ReadFile_impl(verify_filename);
 	if (verify_file.valid && verify_file.line_num > 2)
 	{
