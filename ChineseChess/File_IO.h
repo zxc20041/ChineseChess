@@ -28,6 +28,13 @@ namespace FileManager_ns
 		{
 			line_num = other.line_num;
 			valid = other.valid.load();
+			content = other.content;
+			io_complete = other.io_complete.load();
+		}
+		void operator=(const FILE_INFO& other)
+		{
+			line_num = other.line_num;
+			valid = other.valid.load();
 			io_complete = other.io_complete.load();
 			content = other.content;
 		}
@@ -36,10 +43,10 @@ namespace FileManager_ns
 		std::string GetValueByKey(const std::string& key);
 		int GetIntValueByKey(const std::string& key);
 		
-		
 		//确保IO完成
 		void Lock() const;
 		bool TryLock() const;
+
 
 		//file exists and not empty
 		atomic<bool> valid;
@@ -60,24 +67,25 @@ namespace FileManager_ns
 		//sync read file, verify md5 if expected_md5 is not empty
 		FILE_INFO ReadFile(const std::string& filename, const std::string& expected_md5);
 		//async read file, verify md5 if verify is true
-		FILE_INFO ReadFile(const std::string& filename, const bool verify = 0);
+		shared_ptr<FILE_INFO> ReadFile(const std::string& filename, const bool verify = 0);
 
 		void SaveConfig();
 		void ReadConfig();
 
+		//未实现
 		void RemoveFile(const std::string& filename);
 
-		void WriteFile(const std::string& filename, FILE_INFO file_content, bool certify = 0);
+		void WriteFile(const std::string& filename, FILE_INFO& file_content, bool certify = 0);
 
 		//sync verify file, verify md5 if expected_md5 is not empty
 		bool VerifyFile(const std::string& filename, const std::string& expected_md5 = "");
 
-		void Certfile(const std::string& filename);
+		//void Certfile(const std::string& filename);
 		
 		void Init();
 	private:
-		constexpr static int BUFFER_SIZE = 1024;
-		constexpr static int FILE_LINE_MAX_NUM = 10000;
+		constexpr static int BUFFER_SIZE = 4096;
+		constexpr static int FILE_LINE_MAX_NUM = 8192;
 		struct VERIFY_INFO
 		{
 			int private_value = 0;
@@ -93,13 +101,14 @@ namespace FileManager_ns
 		struct IO_DESC
 		{
 			std::string fileName;
-			VERIFY_INFO fileData;
-			IO_TYPE op_type;
+			shared_ptr<FILE_INFO> fileData;
+			IO_TYPE op_type = IO_TYPE::ReadFile;
 			bool verify = 0;
 		};
 		FILE_INFO ReadFile_impl(const std::string& filename);
-		void WriteFile_impl(const std::string& filename, FILE_INFO file_content);
+		void WriteFile_impl(const std::string& filename, FILE_INFO& file_content);
 		void Certfile_impl(const std::string& filename);
+		bool VerifyFile_impl(const std::string& filename);
 		bool md5_verify(const std::string& filename, const std::string& expected_md5);
 		std::string GetFileMD5(const std::string& filename);
 		VERIFY_INFO CalcFileCertInfo(const std::string& filename);

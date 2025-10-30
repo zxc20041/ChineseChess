@@ -78,7 +78,94 @@ FileManager::~FileManager()
 void FileManager::Init()
 {
 	//创建读写线程
-
+	std::thread file_io_thread([&]
+	{
+		while (!asio_queue.empty())
+		{
+			asio_queue_mutex.lock();
+			auto& io_info = asio_queue.front();
+			asio_queue.pop();
+			asio_queue_mutex.unlock();
+			switch (io_info.op_type)
+			{
+			case IO_TYPE::ReadFile:
+				if (io_info.verify)
+				{
+					if (VerifyFile_impl(io_info.fileName))
+					{
+						io_info.fileData = make_shared<FILE_INFO>(ReadFile_impl(io_info.fileName));
+					}
+					else
+					{
+						io_info.fileData->valid.store(0);
+						io_info.fileData->io_complete.store(1);
+					}
+				}
+				else
+				{
+					io_info.fileData = make_shared<FILE_INFO>(ReadFile_impl(io_info.fileName));
+				}
+				break;
+			case IO_TYPE::WriteFile:
+				WriteFile_impl(io_info.fileName, *io_info.fileData);
+				break;
+			case IO_TYPE::Certfile:
+				Certfile_impl(io_info.fileName);
+				break;
+			default:
+				debugger_main.writelog(DWARNNING, "unknown IO_TYPE in FileManager::Init file_io_thread()", __LINE__);
+				break;
+			}
+			if (normal_quit || quit_single)
+			{
+				break;
+			}
+		}
+		asio_queue_mutex.lock();
+		while (!asio_queue.empty())
+		{
+			auto& io_info = asio_queue.front();
+			asio_queue.pop();
+			switch (io_info.op_type)
+			{
+			case IO_TYPE::ReadFile:
+				if (io_info.verify)
+				{
+					if (VerifyFile_impl(io_info.fileName))
+					{
+						io_info.fileData = make_shared<FILE_INFO>(ReadFile_impl(io_info.fileName));
+					}
+					else
+					{
+						io_info.fileData->valid.store(0);
+						io_info.fileData->io_complete.store(1);
+					}
+				}
+				else
+				{
+					io_info.fileData = make_shared<FILE_INFO>(ReadFile_impl(io_info.fileName));
+				}
+				break;
+			case IO_TYPE::WriteFile:
+				WriteFile_impl(io_info.fileName, *io_info.fileData);
+				if (io_info.verify)
+				{
+					Certfile_impl(io_info.fileName);
+				}
+				break;
+			case IO_TYPE::Certfile:
+				Certfile_impl(io_info.fileName);
+				break;
+			default:
+				debugger_main.writelog(DWARNNING, "unknown IO_TYPE in FileManager::Init file_io_thread()", __LINE__);
+				break;
+			}
+		}
+		asio_queue_mutex.unlock();
+		return;
+	});
+	file_io_thread.detach();
+	return;
 }
 
 FILE_INFO FileManager::ReadFile(const std::string& filename, const std::string& expected_md5)
@@ -99,30 +186,57 @@ FILE_INFO FileManager::ReadFile(const std::string& filename, const std::string& 
 
 void FileManager::SaveConfig()
 {
+	saveConfig();
+	return;
 }
 
 void FileManager::ReadConfig()
 {
+	readConfig();
+	return;
 }
 
 void FileManager::RemoveFile(const std::string& filename)
 {
 }
 
-FILE_INFO FileManager_ns::FileManager::ReadFile(const std::string& filename, const bool verify)
+shared_ptr<FILE_INFO> FileManager_ns::FileManager::ReadFile(const std::string& filename, const bool verify)
 {
-	return FILE_INFO();
+	shared_ptr<FILE_INFO> file_info = make_shared<FILE_INFO>();
+	IO_DESC io_desc;
+	io_desc.fileName = filename;
+	io_desc.fileData = file_info;
+	io_desc.op_type = IO_TYPE::ReadFile;
+	io_desc.verify = verify;
+	asio_queue_mutex.lock();
+	asio_queue.push(io_desc);
+	asio_queue_mutex.unlock();
+	return file_info;
 }
 
-void FileManager::WriteFile(const std::string& filename, FILE_INFO file_content, bool certify)
+void FileManager::WriteFile(const std::string& filename, FILE_INFO& file_content, bool certify)
 {
-	
-}
-
-void FileManager::Certfile(const std::string& filename)
-{
+	IO_DESC io_desc;
+	io_desc.fileName = filename;
+	io_desc.fileData = make_shared<FILE_INFO>(file_content);
+	io_desc.op_type = IO_TYPE::WriteFile;
+	io_desc.verify = certify;
+	asio_queue_mutex.lock();
+	asio_queue.push(io_desc);
+	asio_queue_mutex.unlock();
 	return;
 }
+
+//void FileManager::Certfile(const std::string& filename)
+//{
+//	IO_DESC io_desc;
+//	io_desc.fileName = filename;
+//	io_desc.op_type = IO_TYPE::Certfile;
+//	asio_queue_mutex.lock();
+//	asio_queue.push(io_desc);
+//	asio_queue_mutex.unlock();
+//	return;
+//}
 
 bool FileManager_ns::FileManager::VerifyFile(const std::string& filename, const std::string& expected_md5)
 {
@@ -171,7 +285,7 @@ FILE_INFO FileManager::ReadFile_impl(const std::string& filename)
 	return fileData;
 }
 
-void FileManager::WriteFile_impl(const std::string& filename, FILE_INFO file_content)
+void FileManager::WriteFile_impl(const std::string& filename, FILE_INFO& file_content)
 {
 	if (file_content.valid == 0)
 	{
@@ -213,6 +327,17 @@ void FileManager_ns::FileManager::Certfile_impl(const std::string& filename)
 	string verify_filename = filename.substr(0, filename.length() - 3) + ".check";
 	WriteFile_impl(verify_filename, verify_file);
 	return;
+}
+
+bool FileManager_ns::FileManager::VerifyFile_impl(const std::string& filename)
+{
+	VERIFY_INFO file_cert_info = GetFileCertInfo(filename);
+	VERIFY_INFO calc_cert_info = CalcFileCertInfo(filename);
+	if (file_cert_info.valid && calc_cert_info.valid && file_cert_info.md5 == calc_cert_info.md5 && file_cert_info.private_value == calc_cert_info.private_value)
+	{
+		return 1;
+	}
+	return 0;
 }
 
 
