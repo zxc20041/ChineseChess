@@ -72,6 +72,9 @@
     <ClInclude Include="File_IO.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="cchess\pages\ChineseChessHistory.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AppMain.cpp">
@@ -120,6 +123,9 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="File_IO.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="cchess\pages\ChineseChessHistory.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
