@@ -1,13 +1,17 @@
 #include"LocalPVP.h"
 #include"..\framework_base.h"
 #include"settings.h"
+#include"File_IO.h"
 using namespace std;
 using namespace CChessBase;
 using namespace debugger;
+using namespace FileManager_ns;
 
 CChessLocalPVP::CChessLocalPVP():CChessEngine()
 {
-	update_check_win = 0, match_over = 0, win_side = 0;
+	update_check_win = 0, match_over = 0, win_side = 0, piece_moved = 0;
+	result.valid = 0;
+	
 }
 
 CChessLocalPVP::~CChessLocalPVP()
@@ -70,6 +74,8 @@ void CChessLocalPVP::Reset()
 	}
 
 	SearchAvailableSteps();
+
+	piece_moved = 0;
 
 	return;
 }
@@ -137,6 +143,9 @@ void CChessLocalPVP::MovePiece(CChessBase::PieceMoveDesc move)
 		//todo: sync map to cui
 		return;
 	}
+
+	RecordMove(move);
+
 	map.board[move.tox][move.toy] = map.board[move.fromx][move.fromy];
 	map.piece_side[move.tox][move.toy] = map.piece_side[move.fromx][move.fromy];
 	map.board[move.fromx][move.fromy] = PIECE_NULL;
@@ -145,7 +154,6 @@ void CChessLocalPVP::MovePiece(CChessBase::PieceMoveDesc move)
 	{
 		result.result = RESULT_CHECK;
 		result.valid = 1;
-		//debugger_main.writelog(DDEBUG, "found CheckMate");
 	}
 
 	current_side_red = !current_side_red;
@@ -208,5 +216,27 @@ void CChessLocalPVP::SearchAvailableSteps()
 		}
 	}
 	engineAdapter.SearchAvailableSteps();
+	return;
+}
+
+void CChessLocalPVP::RecordMove(CChessBase::PieceMoveDesc move)
+{
+	if (!piece_moved)
+	{
+		piece_moved = 1;
+		recordFilename = g_fm.GetBiggestIndexedFilename("record", ".dat", "pvp");
+		FILE_INFO file_head;
+
+		file_head.AppendKeyValue("username", usernameC);
+		file_head.AppendKeyValue("gamemode", "PVP");
+		file_head.AppendKeyValue("start_time", getTimeStr());
+		file_head.AppendLine("[moves]");
+		file_head.line_num = file_head.content->size();
+		g_fm.WriteFile(recordFilename, file_head, 1);
+	}
+	FILE_INFO file_content;
+	file_content.line_num = 1;
+	file_content.content->emplace_back(string(1, (char)move.fromx + 'a') + to_string(move.fromy) + string(1, (char)move.tox + 'a') + to_string(move.toy));
+	g_fm.AppendFile(recordFilename, file_content, 1);
 	return;
 }

@@ -15,14 +15,14 @@ namespace FileManager_ns
 			line_num = 0;
 			valid = 1;
 			io_complete = 0;
-			content = make_shared<vector<std::string>>();
+			content = std::make_shared<std::vector<std::string>>();
 		}
 		FILE_INFO(bool _valid)
 		{
 			line_num = 0;
 			valid = _valid;
 			io_complete = !_valid;
-			content = make_shared<vector<std::string>>();
+			content = std::make_shared<std::vector<std::string>>();
 		}
 		FILE_INFO(const FILE_INFO& other)
 		{
@@ -41,6 +41,7 @@ namespace FileManager_ns
 		void AppendLine(const std::string& content);
 		void AppendKeyValue(const std::string& key, const std::string& value);
 		std::string GetValueByKey(const std::string& key);
+		std::vector<std::string> GetValuesByKey(const std::string& key);
 		int GetIntValueByKey(const std::string& key);
 		
 		//确保IO完成
@@ -49,11 +50,11 @@ namespace FileManager_ns
 
 
 		//file exists and not empty
-		atomic<bool> valid;
+		std::atomic<bool> valid;
 		//IO是否完成
-		atomic<bool> io_complete;
+		std::atomic<bool> io_complete;
 		int line_num;
-		shared_ptr<vector<std::string>> content;
+		std::shared_ptr<std::vector<std::string>> content;
 	private:
 		std::string Key_Format(const std::string& key);
 	};
@@ -67,7 +68,7 @@ namespace FileManager_ns
 		//sync read file, verify md5 if expected_md5 is not empty
 		FILE_INFO ReadFile(const std::string& filename, const std::string& expected_md5);
 		//async read file, verify md5 if verify is true
-		shared_ptr<FILE_INFO> ReadFile(const std::string& filename, const bool verify = 0);
+		std::shared_ptr<FILE_INFO> ReadFile(const std::string& filename, const bool verify = 0);
 
 		void SaveConfig();
 		void ReadConfig();
@@ -77,11 +78,13 @@ namespace FileManager_ns
 
 		void WriteFile(const std::string& filename, FILE_INFO& file_content, bool certify = 0);
 
+		void AppendFile(const std::string& filename, FILE_INFO& file_content, bool certify = 0);
+
 		//sync verify file, verify md5 if expected_md5 is not empty
 		bool VerifyFile(const std::string& filename, const std::string& expected_md5 = "");
 
-		//void Certfile(const std::string& filename);
-		
+		std::string GetBiggestIndexedFilename(const std::string& filename_prefix, const std::string& filename_suffix, const std::string& sub_directory);
+
 		void Init();
 	private:
 		constexpr static int BUFFER_SIZE = 4096;
@@ -96,17 +99,19 @@ namespace FileManager_ns
 		{
 			ReadFile,
 			WriteFile,
+			AppendFile,
 			Certfile
 		};
 		struct IO_DESC
 		{
 			std::string fileName;
-			shared_ptr<FILE_INFO> fileData;
+			std::shared_ptr<FILE_INFO> fileData;
 			IO_TYPE op_type = IO_TYPE::ReadFile;
 			bool verify = 0;
 		};
 		FILE_INFO ReadFile_impl(const std::string& filename);
 		void WriteFile_impl(const std::string& filename, FILE_INFO& file_content);
+		void AppendFile_impl(const std::string& filename, FILE_INFO& content);
 		void Certfile_impl(const std::string& filename);
 		bool VerifyFile_impl(const std::string& filename);
 		bool md5_verify(const std::string& filename, const std::string& expected_md5);
@@ -118,4 +123,6 @@ namespace FileManager_ns
 		std::queue<IO_DESC> asio_queue;
 		std::mutex asio_queue_mutex;
 	};
+
+	extern FileManager g_fm;
 }

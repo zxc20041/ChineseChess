@@ -12,6 +12,8 @@ using namespace debugger;
 
 extern debug_ex debugger_audio;
 
+FileManager FileManager_ns::g_fm;
+
 void FILE_INFO::AppendLine(const std::string& _content)
 {
 	content->push_back(_content);
@@ -37,6 +39,27 @@ string FILE_INFO::GetValueByKey(const std::string& key)
 		}
 	}
 	return string();
+}
+
+std::vector<std::string> FileManager_ns::FILE_INFO::GetValuesByKey(const std::string& key)
+{
+	std::vector<std::string> values;
+	for (size_t i = 0; i < content->size(); i++)
+	{
+		if ((*content)[i] == Key_Format(key))
+		{
+			for (size_t j = i + 1; j < content->size(); j++)
+			{
+				if ((*content)[j].front() == '[' && (*content)[j].back() == ']')
+				{
+					break;
+				}
+				values.push_back((*content)[j]);
+			}
+			break;
+		}
+	}
+	return values;
 }
 
 int FileManager_ns::FILE_INFO::GetIntValueByKey(const std::string& key)
@@ -80,15 +103,22 @@ void FileManager::Init()
 	//创建读写线程
 	std::thread file_io_thread([&]
 	{
-		while (!asio_queue.empty())
+		debugger_main.writelog(DDEBUG, "FileManager IO thread started.");
+		while (!(normal_quit || quit_single))
 		{
+			if (asio_queue.empty())
+			{
+				Sleep(10);
+				continue;
+			}
 			asio_queue_mutex.lock();
-			auto& io_info = asio_queue.front();
+			auto io_info = asio_queue.front();
 			asio_queue.pop();
 			asio_queue_mutex.unlock();
 			switch (io_info.op_type)
 			{
 			case IO_TYPE::ReadFile:
+				debugger_main.writelog(DDEBUG, "FileManager IO thread processing ReadFile: " + io_info.fileName);
 				if (io_info.verify)
 				{
 					if (VerifyFile_impl(io_info.fileName))
@@ -107,17 +137,38 @@ void FileManager::Init()
 				}
 				break;
 			case IO_TYPE::WriteFile:
+				debugger_main.writelog(DDEBUG, "FileManager IO thread processing WriteFile: " + io_info.fileName);
 				WriteFile_impl(io_info.fileName, *io_info.fileData);
+				if (io_info.verify)
+				{
+					Certfile_impl(io_info.fileName);
+				}
+				break;
+			case IO_TYPE::AppendFile:
+				debugger_main.writelog(DDEBUG, "FileManager IO thread processing AppendFile: " + io_info.fileName);
+				if (io_info.verify)
+				{
+					if(!VerifyFile_impl(io_info.fileName))
+					{
+						io_info.fileData->valid.store(0);
+						io_info.fileData->io_complete.store(1);
+						break;
+					}
+				}
+				AppendFile_impl(io_info.fileName, *io_info.fileData);
+				if (io_info.verify)
+				{
+					Certfile_impl(io_info.fileName);
+				}
+				io_info.fileData->valid.store(1);
+				io_info.fileData->io_complete.store(1);
 				break;
 			case IO_TYPE::Certfile:
+				debugger_main.writelog(DDEBUG, "FileManager IO thread processing Certfile: " + io_info.fileName);
 				Certfile_impl(io_info.fileName);
 				break;
 			default:
 				debugger_main.writelog(DWARNNING, "unknown IO_TYPE in FileManager::Init file_io_thread()", __LINE__);
-				break;
-			}
-			if (normal_quit || quit_single)
-			{
 				break;
 			}
 		}
@@ -162,9 +213,11 @@ void FileManager::Init()
 			}
 		}
 		asio_queue_mutex.unlock();
+		debugger_main.writelog(DDEBUG, "FileManager IO thread stopped.");
 		return;
 	});
 	file_io_thread.detach();
+	debugger_main.writelog(DINFO, "FileManager IO thread started.", __LINE__);
 	return;
 }
 
@@ -227,16 +280,19 @@ void FileManager::WriteFile(const std::string& filename, FILE_INFO& file_content
 	return;
 }
 
-//void FileManager::Certfile(const std::string& filename)
-//{
-//	IO_DESC io_desc;
-//	io_desc.fileName = filename;
-//	io_desc.op_type = IO_TYPE::Certfile;
-//	asio_queue_mutex.lock();
-//	asio_queue.push(io_desc);
-//	asio_queue_mutex.unlock();
-//	return;
-//}
+void FileManager_ns::FileManager::AppendFile(const std::string& filename, FILE_INFO& file_content, bool certify)
+{
+	IO_DESC io_desc;
+	io_desc.fileName = filename;
+	io_desc.fileData = make_shared<FILE_INFO>(file_content);
+	io_desc.op_type = IO_TYPE::AppendFile;
+	io_desc.verify = certify;
+	asio_queue_mutex.lock();
+	asio_queue.push(io_desc);
+	asio_queue_mutex.unlock();
+	return;
+}
+
 
 bool FileManager_ns::FileManager::VerifyFile(const std::string& filename, const std::string& expected_md5)
 {
@@ -245,6 +301,50 @@ bool FileManager_ns::FileManager::VerifyFile(const std::string& filename, const 
 		return true;
 	}
 	return GetFileMD5(filename) == expected_md5;
+}
+
+std::string FileManager_ns::FileManager::GetBiggestIndexedFilename(const std::string& filename_prefix, const std::string& filename_suffix, const std::string& sub_directory)
+{
+    string directory = "./save/" + usernameC + "/" + sub_directory;
+    WIN32_FIND_DATAA findFileData;
+    HANDLE hFind = INVALID_HANDLE_VALUE;
+    int max_index = -1;
+    std::string max_filename;
+
+    std::string search_pattern = directory + "/" + filename_prefix + "*" + filename_suffix;
+    hFind = FindFirstFileA(search_pattern.c_str(), &findFileData);
+    if (hFind == INVALID_HANDLE_VALUE) 
+	{
+		return directory + "/" + filename_prefix + "1" + filename_suffix;
+    }
+    do 
+	{
+        std::string fname = findFileData.cFileName;
+        // 检查前缀和后缀
+        if (fname.size() >= filename_prefix.size() + filename_suffix.size() &&
+            fname.substr(0, filename_prefix.size()) == filename_prefix &&
+            fname.substr(fname.size() - filename_suffix.size()) == filename_suffix) {
+            // 提取中间的数字部分
+            std::string index_str = fname.substr(filename_prefix.size(), fname.size() - filename_prefix.size() - filename_suffix.size());
+            try 
+			{
+                int idx = std::stoi(index_str);
+                if (idx > max_index) 
+				{
+                    max_index = idx;
+                    max_filename = fname;
+                }
+            } catch (...) {
+                // 非数字跳过
+            }
+        }
+    } while (FindNextFileA(hFind, &findFileData) != 0);
+    FindClose(hFind);
+	if (max_filename.empty())
+	{
+		return directory + "/" + filename_prefix + "1" + filename_suffix;
+	}
+    return directory + "/" + max_filename;
 }
 
 FILE_INFO FileManager::ReadFile_impl(const std::string& filename)
@@ -287,13 +387,12 @@ FILE_INFO FileManager::ReadFile_impl(const std::string& filename)
 
 void FileManager::WriteFile_impl(const std::string& filename, FILE_INFO& file_content)
 {
-	if (file_content.valid == 0)
+	if (file_content.valid == 0|| filename.empty())
 	{
-		debugger_main.writelog(DWARNNING, "WriteFile Failed since file_content invalid! " + filename, __LINE__);
+		debugger_main.writelog(DWARNNING, "WriteFile Failed since param invalid! " + filename, __LINE__);
 		return;
 	}
 	ofstream file;
-	string linebuf;
 	file.open(filename, ios::out);
 	
 	if (!file.is_open())
@@ -312,6 +411,31 @@ void FileManager::WriteFile_impl(const std::string& filename, FILE_INFO& file_co
 	return;
 }
 
+void FileManager_ns::FileManager::AppendFile_impl(const std::string& filename, FILE_INFO& content)
+{
+	if (content.valid == 0 || filename.empty())
+	{
+		debugger_main.writelog(DWARNNING, "AppendFile Failed since param invalid! " + filename, __LINE__);
+		return;
+	}
+	ofstream file;
+	file.open(filename, ios::app);
+	if (!file.is_open())
+	{
+		g_am.PlayEffectSound("ioerror");
+		g_cm.CreateEffect(301, 400, 50);
+		debugger_main.writelog(DWARNNING, "AppendFile Error! " + filename, __LINE__);
+		return;
+	}
+	for (int i = 0; i < content.line_num; i++)
+	{
+		file << content.content->at(i) << endl;
+	}
+	file.close();
+	content.io_complete.store(1);
+	return;
+}
+
 void FileManager_ns::FileManager::Certfile_impl(const std::string& filename)
 {
 	VERIFY_INFO result = CalcFileCertInfo(filename);
@@ -324,7 +448,7 @@ void FileManager_ns::FileManager::Certfile_impl(const std::string& filename)
 	verify_file.AppendLine(result.md5);
 	verify_file.AppendLine(to_string(result.private_value));
 	//.dat->.check
-	string verify_filename = filename.substr(0, filename.length() - 3) + ".check";
+	string verify_filename = filename.substr(0, filename.length() - 4) + ".check";
 	WriteFile_impl(verify_filename, verify_file);
 	return;
 }

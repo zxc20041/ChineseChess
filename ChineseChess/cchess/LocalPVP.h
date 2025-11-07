@@ -19,11 +19,13 @@ public:
 protected:
 	
 
-	bool update_check_win, match_over, win_side;
+	bool update_check_win, match_over, win_side, piece_moved;
 	CChessBase::EngineResult result;
+	std::string recordFilename;
 
 	virtual bool CheckBestMove() override;
 	virtual CChessBase::PieceMoveDesc GetBestMove() override;
 	virtual void SearchBestMove() override;
 	void SearchAvailableSteps();
+	virtual void RecordMove(CChessBase::PieceMoveDesc move);
 };

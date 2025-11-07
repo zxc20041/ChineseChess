@@ -11,4 +11,5 @@ public:
 	bool CheckBestMove() override;
 	CChessBase::PieceMoveDesc GetBestMove() override;
 	void SearchBestMove() override;
+	void RecordMove(CChessBase::PieceMoveDesc move) override;
 };

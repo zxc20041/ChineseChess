@@ -3,10 +3,11 @@
 
 #include "audio_thread.h"
 #include "settings.h"
-
+#include "File_IO.h"
 #include "thread_communicate.h"
 #define ReadFile(filename,buf) ReadFile_1(filename,buf,sizeof(buf)/sizeof(buf[0]))
 using namespace std;
+using namespace FileManager_ns;
 
 extern debug_ex debugger_audio;
 
@@ -470,7 +471,7 @@ unsigned __stdcall File_IO(LPVOID lpParameter)
         MessageBoxEx(NULL, err.c_str(), "IO Error", MB_OK | MB_ICONSTOP, NULL);
         Sleep(500);
     }
-
+	g_fm.Init();
     while (1)
     {
         waitnum++;
