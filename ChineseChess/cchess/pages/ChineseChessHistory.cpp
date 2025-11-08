@@ -1,4 +1,13 @@
 #include "ChineseChessHistory.h"
+#include"settings.h"
+#include"audio_thread.h"
+#include "ChineseChess.h"
+#include"cchess/localPVP.h"
+
+using namespace std;
+using namespace std::chrono_literals;
+using namespace debugger;
+
 
 GameHistory_Page::GameHistory_Page() :PAGE(PAGE_INDEX, PAGE_CREATED_STATUS, Effect::WHITE_CIRCLE_SWITCH, 2, "GameHistory")
 {
@@ -10,23 +19,170 @@ GameHistory_Page::~GameHistory_Page()
 
 bool GameHistory_Page::Init()
 {
-    return false;
+    PAGE::Init();
+
+    nextStepButton = make_shared<Button>(100, 50, 250, 100, lan[0].nextStep, g_pBrushYellow, g_pBrushBlue, g_pBrushGreen, g_pD2DBimtapUI[10]);
+    previousStepButton = make_shared<Button>(100, 50, 250, 100, lan[0].prevStep, g_pBrushYellow, g_pBrushBlue, g_pBrushGreen, nullptr);
+    returnButton = make_shared<Button>(100, 50, 250, 100, "", g_pBrushYellow, g_pBrushBlue, g_pBrushGreen, nullptr);
+    return 1;
 }
 
 void GameHistory_Page::Update()
 {
+	PAGE::Update();
+	if (Page_status < PAGE_PREPARED_STATUS)
+	{
+		auto status = task.wait_for(0ms);
+		if (status != std::future_status::ready)
+		{
+			//debugger_main.writelog(DDEBUG, "in LocalGame_Page::Update() waiting FinishLoading", __LINE__);
+			if (returnButton->getClicked())
+			{
+				task.wait();
+				g_cm.CreateEffect(9);
+				g_PageManager.SwitchPageTo(HOME_PAGE_INDEX);
+			}
+			return;
+		}
+		Page_status = PAGE_PREPARED_STATUS;
+	}
+	CUI->Update();
+	if (returnButton->getClicked())
+	{
+		g_cm.CreateEffect(Effect::WHITE_SWITCH, cpos.x, cpos.y);
+		g_PageManager.SwitchPageTo(HOME_PAGE_INDEX);
+	}
+	if(nextStepButton->getClicked())
+	{
+		//CUI->GoToNextHistoryStep();
+	}
+	if(previousStepButton->getClicked())
+	{
+		//CUI->GoToPreviousHistoryStep();
+	}
+	return;
 }
 
 void GameHistory_Page::Rend()
 {
+	g_pD2DDeviceContext->Clear(D2D1::ColorF(D2D1::ColorF::LightGoldenrodYellow));
+	PAGE::Rend();
+	if (Page_status < PAGE_PREPARED_STATUS)
+	{
+		return;
+	}
+	CUI->Rend();
+	return;
 }
 
 bool GameHistory_Page::EnterPage()
 {
-    return false;
+    g_am.PlayBGM(BGM_INGAME, 1, 1);
+    PAGE::EnterPage();
+
+	//create async task
+	task = std::async(std::launch::async, [&]
+		{
+			chessEngine = make_shared<CChessLocalPVP>();
+			chessEngine->Reset();
+			CUI = make_unique<CChessUI>();
+			CUI->SetEngine(chessEngine);
+
+			while (!g_rm.GetFinishLoading())
+			{
+				Sleep(1);
+			}
+
+			//add brush
+			CreateAndAddBrush();
+
+			//resolve atlas data
+			if (!CUI->LoadPiecesAtlasInfo())
+			{
+				g_PageManager.SwitchPageTo(HOME_PAGE_INDEX);
+				g_am.PlayEffectSound("ioerror");
+				return;
+			}
+			CUI->Reset();
+			return;
+		});
+
+	g_rm.AddResource("effect font", ".\\game\\font\\QianTuBiFengShouXieTi.ttf", "pass", FONT_DESC{ "Ç§Í¼±Ê·æÊÖÐ´Ìå",192 });
+
+	g_rm.AddResource("bg board", ".\\game\\pic\\board.jpg", "DE601E07F5C7D8B8DDD81F521A458510", RESOURCE_INFO::BRUSH_ONLY);
+	g_rm.AddResource("bg river", ".\\game\\pic\\bg_river.png", "pass", RESOURCE_INFO::DEFAULT_Bitmap);
+	g_rm.AddResource("pieces", ".\\game\\pic\\pieces.png", "pass", RESOURCE_INFO::DEFAULT_Bitmap);
+
+	g_rm.AddResource("pieces atlas info", ".\\game\\pic\\pieces.dat", "pass", RESOURCE_INFO::DEFAULT_TEXT);
+
+	g_rm.AddResource("eat", ".\\game\\sounds\\eat.wav", "pass", RESOURCE_INFO::DEFAULT_WAVE);
+	g_rm.AddResource("juesha", ".\\game\\sounds\\juesha.wav", "pass", RESOURCE_INFO::DEFAULT_WAVE);
+	g_rm.AddResource("checkmate", ".\\game\\sounds\\checkmate.wav", "pass", RESOURCE_INFO::DEFAULT_WAVE);
+	g_rm.AddResource("move", ".\\game\\sounds\\move.wav", "pass", RESOURCE_INFO::DEFAULT_WAVE);
+
+	g_rm.LoadAll();
+
+	g_cm.AddButton(returnButton);
+	g_cm.AddButton(nextStepButton);
+	g_cm.AddButton(previousStepButton);
+
+    return 1;
 }
 
 bool GameHistory_Page::ExitPage()
 {
-    return false;
+	CUI->SetEngine(nullptr);
+	chessEngine = nullptr;
+	CUI = nullptr;
+	g_rm.ReleaseAll();
+	return 1;
+}
+
+void GameHistory_Page::CreateAndAddBrush()
+{
+	HRESULT hr;
+	D2D1_GRADIENT_STOP gradientStops[3]{};
+	gradientStops[0].color = D2D1::ColorF(0, 0, 0, 1);
+	gradientStops[0].position = 0.0f;
+	gradientStops[1].color = D2D1::ColorF(0, 0, 0, 1);
+	gradientStops[1].position = 0.5f;
+	gradientStops[2].color = D2D1::ColorF(0, 0, 0, 0);
+	gradientStops[2].position = 1.0f;
+	ID2D1GradientStopCollection* pGradientStops = nullptr;
+	ID2D1RadialGradientBrush* pRadialGradientBrush = nullptr;
+	// Create gradient stops collection
+	hr = g_pD2DDeviceContext->CreateGradientStopCollection(
+		gradientStops,
+		3,
+		D2D1_GAMMA_2_2,
+		D2D1_EXTEND_MODE_CLAMP,
+		&pGradientStops
+	);
+	if (FAILED(hr))
+	{
+		debugger_main.writelog(DWARNNING, "Create gradient stops collection failed!", __LINE__);
+		g_PageManager.SwitchPageTo(HOME_PAGE_INDEX);
+		g_am.PlayEffectSound("ioerror");
+		return;
+	}
+	hr = g_pD2DDeviceContext->CreateRadialGradientBrush(
+		D2D1::RadialGradientBrushProperties(
+			D2D1::Point2F(to_screen(0), to_screen(0)),
+			D2D1::Point2F(to_screen(0), to_screen(0)),
+			to_screen(45), to_screen(45)),
+		pGradientStops,
+		&pRadialGradientBrush
+	);
+	if (FAILED(hr))
+	{
+		debugger_main.writelog(DWARNNING, "Create Radial gradient brush failed!", __LINE__);
+		SAFE_RELEASE(pGradientStops);
+		g_PageManager.SwitchPageTo(HOME_PAGE_INDEX);
+		g_am.PlayEffectSound("ioerror");
+		return;
+	}
+
+	SAFE_RELEASE(pGradientStops);
+	g_rm.AddBrush("shandow", pRadialGradientBrush);
+	return;
 }

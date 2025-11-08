@@ -4866,6 +4866,7 @@ void initgame()
     g_PageManager.AddPage(dynamic_cast<PAGE*>(new VERIFY_FAILED_PAGE()));
     g_PageManager.AddPage(dynamic_cast<PAGE*>(new LocalGame_Page()));
     g_PageManager.AddPage(dynamic_cast<PAGE*>(new LocalGamePVE_Page()));
+    g_PageManager.AddPage(dynamic_cast<PAGE*>(new GameHistory_Page()));
 
     g_PageManager.SetInitalPage(dynamic_cast<PAGE*>(new Start_Page()));
 
@@ -5231,12 +5232,12 @@ void PAGE::SetFixedUpdate(bool enable, float interval_time, int update_type)
     return;
 }
 
-int PAGE::getPageIndex()
+int PAGE::getPageIndex() const
 {
     return Page_index;
 }
 
-int PAGE::getIntro_effect_index()
+int PAGE::getIntro_effect_index() const
 {
     return intro_effect_index;
 }
@@ -5441,7 +5442,7 @@ void PAGE::LOADING_PAGE::update(float timeScale)
     return;
 }
 
-void PAGE::LOADING_PAGE::rend()
+void PAGE::LOADING_PAGE::rend() const
 {
     if (arc_angel1 < arc_angel2)
     {

@@ -18,7 +18,7 @@ public:
 
 private:
 	void CreateAndAddBrush();
-	shared_ptr<Button> backButton;
+	shared_ptr<Button> nextStepButton, previousStepButton, returnButton;
 	std::future<void> task;
 	unique_ptr<CChessUI> CUI;
 	shared_ptr<CChessEngine>chessEngine;

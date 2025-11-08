@@ -124,7 +124,8 @@ struct stringTable
     std::string elo = "PVE ELO";
 	std::string elo_description = "Set elo rating for AI, range 1350-2850.";
 
-    
+	std::string nextStep = "Next Step";
+	std::string prevStep = "Previous Step";
 };
 
 extern setting_general_desc set1[2];

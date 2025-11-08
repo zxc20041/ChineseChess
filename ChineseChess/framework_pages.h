@@ -2,6 +2,7 @@
 #include"framework_base.h"
 #include"cchess\pages\ChineseChess.h"
 #include"cchess\pages\ChineseChessPVE.h"
+#include"cchess\pages\ChineseChessHistory.h"
 
 
 class Start_Page :public PAGE
@@ -58,7 +59,7 @@ public:
     bool ExitPage() override;
     constexpr static int PAGE_INDEX = PAGE_HOME;
 private:
-    shared_ptr<Button> startButton, quitButton, settingButton, PVEButton, PVPOnlineButton;
+    shared_ptr<Button> startButton, quitButton, settingButton, PVEButton, PVPOnlineButton, historyButton;
     int homepage_bg_type, homepage_text_type;
     float bg_transform_x, bg_transform_y, bg_light_opacity;
     bool text_type;

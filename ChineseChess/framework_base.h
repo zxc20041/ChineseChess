@@ -519,8 +519,8 @@ public:
 
     void SetFixedUpdate(bool enable, float interval_time=0.02f,int update_type= UPDATE_FOREGROUND);  //time in sec
 
-    int getPageIndex();
-    int getIntro_effect_index();
+    int getPageIndex() const;
+    int getIntro_effect_index() const;
 
     string getTAG();
 protected:
@@ -547,7 +547,7 @@ protected:
     {
     public:
         void update(float timeScale);
-        void rend();
+        void rend() const;
         LOADING_PAGE();
     private:
         constexpr static float MAX_SPEED = 6, CENTER_POSX = 800, CENTER_POSY = 500, RADIUS = 50, BASE_SPEED = 1;

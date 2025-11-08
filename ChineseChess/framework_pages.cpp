@@ -171,6 +171,7 @@ bool Home_Page::Init()
     quitButton = make_shared<Button>(900, 670, 1050, 750, ""/*lan[0].quit*/, g_pBrushYellow, g_pBrushBlue, g_pBrushGreen, g_pD2DBimtapUI[1]);
     settingButton = make_shared<Button>(600, 680, 750, 750, "", g_pBrushYellow, g_pBrushBlue, g_pBrushGreen, g_pD2DBimtapUI[0]);
     PVEButton = make_shared<Button>(280, 530, 470, 630, lan[0].PVE, g_pBrushGreen, g_pBrushYellow, g_pBrushBlue);
+	historyButton = make_shared<Button>(1300, 700, 1490, 800, lan[0].history, g_pBrushYellow, g_pBrushLightBlue, g_pBrushGreen);
     return 1;
 }
 
@@ -201,6 +202,10 @@ void Home_Page::Update()
     {
         g_PageManager.SwitchPageTo(LocalGamePVE_Page::PAGE_INDEX);
     }
+    else if (historyButton->getClicked())
+    {
+        g_PageManager.SwitchPageTo(GameHistory_Page::PAGE_INDEX);
+	}
     return;
 }
 
@@ -230,6 +235,7 @@ bool Home_Page::EnterPage()
     g_cm.AddButton(startButton);
     g_cm.AddButton(settingButton);
     g_cm.AddButton(PVEButton);
+	g_cm.AddButton(historyButton);
 
     bg_transform_x = rand() % 4000;
     bg_transform_y = rand() % 4000;

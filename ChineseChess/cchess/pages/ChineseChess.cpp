@@ -46,10 +46,7 @@ void LocalGame_Page::Update()
 			}
 			return;
 		}
-
-		//OnLoad();
 		Page_status = PAGE_PREPARED_STATUS;
-
 	}
 
 	CUI->Update();
@@ -133,8 +130,8 @@ bool LocalGame_Page::EnterPage()
 
 bool LocalGame_Page::ExitPage()
 {
-	chessEngine = nullptr;
 	CUI->SetEngine(nullptr);
+	chessEngine = nullptr;
 	CUI = nullptr;
 	g_rm.ReleaseAll();
 	return 1;
